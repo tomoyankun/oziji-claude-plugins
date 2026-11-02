@@ -109,10 +109,23 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    const segments = await read($, segmentsAtom)
+    const stored = await read($, segmentsAtom)
     const isTeammate = await read($, teammateAtom)
 
-    if (isTeammate || isHiddenView(e.props) || segments.length === 0) {
+    if (isTeammate || isHiddenView(e.props)) {
+      return next(e)
+    }
+
+    // resumeで別セッションに切り替わると、atomが空のまま残る。空のときは使用量を直接取得する。
+    const segments =
+      stored.length > 0
+        ? stored
+        : await $.session
+            .usage()
+            .then(u => buildSegments(u.context, u.rateLimits))
+            .catch(() => [] as Segment[])
+
+    if (segments.length === 0) {
       return next(e)
     }
 
