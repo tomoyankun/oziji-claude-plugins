@@ -1,16 +1,15 @@
 {
   "name": "claude-mods-plugins",
-  "description": "Claude Code mods: usage-status",
   "owner": { "name": "tomoyankun" },
+  "metadata": {
+    "description": "Claude Code の mod / プラグイン集。使用量ゲージを表示する usage-status を配布する",
+    "version": "0.1.0"
+  },
   "plugins": [
     {
       "name": "usage-status",
-      "source": {
-        "source": "git-subdir",
-        "url": "tomoyankun/claude-mods-plugins",
-        "path": "mods/usage-status",
-        "ref": "v0.7.1"
-      }
+      "source": "./mods/usage-status",
+      "description": "5時間・1週間の使用量制限とセッションのトークン使用量を、入力欄の上にゲージで常時表示する。80%以上は赤"
     }
   ]
 }
