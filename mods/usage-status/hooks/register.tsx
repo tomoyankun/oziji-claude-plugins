@@ -8,6 +8,10 @@ const segmentsAtom = atom({ plugin: 'usage-status', key: 'segments' } as const, 
 // 別ペインのチームメイトは、チーム設定のtmuxPaneIdに自分のTMUX_PANEが載る。リードは載らない。
 const teammateAtom = atom({ plugin: 'usage-status', key: 'isTeammate' } as const, false)
 
+// 表示のオン・オフ。再起動後も保つため、ファイルに保存する。
+const enabledAtom = atom({ plugin: 'usage-status', key: 'enabled' } as const, true)
+const SETTINGS_FILE = '.claude/usage-status.json'
+
 const LABELS: Record<string, string> = { five_hour: '5h', seven_day: '7d' }
 const GAUGE_WIDTH = 10
 export const CAUTION_PERCENT = 50
@@ -55,6 +59,30 @@ const readTeamConfigs = async ($: EngineInterface): Promise<TeamConfig[]> => {
   return configs
 }
 
+// 引数なしは反転、on / off は指定どおり。それ以外は undefined を返す。
+export const parseToggle = (args: string, current: boolean): boolean | undefined => {
+  const word = args.trim().toLowerCase()
+
+  return word === '' ? !current : word === 'on' ? true : word === 'off' ? false : undefined
+}
+
+const readEnabled = async ($: EngineInterface): Promise<boolean> => {
+  try {
+    const home = await $.env.get('HOME')
+
+    return JSON.parse(await $.fs.read(`${home}/${SETTINGS_FILE}`)).enabled !== false
+  } catch {
+    // ファイルが無い、または読めないときは、表示する。
+    return true
+  }
+}
+
+const writeEnabled = async ($: EngineInterface, enabled: boolean): Promise<void> => {
+  const home = await $.env.get('HOME')
+
+  await $.fs.write(`${home}/${SETTINGS_FILE}`, JSON.stringify({ enabled }))
+}
+
 const pad = (n: number): string => String(n).padStart(2, '0')
 
 // 5時間枠は当日中にリセットされるため時刻のみ、1週間枠は日付も示す。
@@ -93,13 +121,33 @@ export const buildSegments = (
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
+    await $.command.register({
+      name: 'usage-status',
+      description: '使用量ゲージの表示をオン・オフする(引数: on / off。省略すると反転)',
+    })
+    const enabledFromFile = await readEnabled($)
     const pane = await $.env.get('TMUX_PANE')
     const detected = await readTeamConfigs($).then(c => isTeammatePane(c, pane)).catch(() => false)
     await update($, teammateAtom, () => detected)
+    await update($, enabledAtom, () => enabledFromFile)
     const usage = await $.session.usage()
     await update($, segmentsAtom, () => buildSegments(usage.context, usage.rateLimits))
 
     return next(e)
+  })
+
+  on('command.run', { command: 'usage-status' }, async ($, e) => {
+    const current = await read($, enabledAtom)
+    const next = parseToggle(e.args, current)
+
+    if (next === undefined) {
+      return { text: `引数は on または off を指定してください。現在: ${current ? 'on' : 'off'}` }
+    }
+
+    await update($, enabledAtom, () => next)
+    await writeEnabled($, next).catch(() => undefined)
+
+    return { text: `使用量ゲージを ${next ? 'on' : 'off'} にしました。` }
   })
 
   on('session.measure', async ($, e, next) => {
@@ -111,8 +159,9 @@ export const register: Register = on => {
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const stored = await read($, segmentsAtom)
     const isTeammate = await read($, teammateAtom)
+    const enabled = await read($, enabledAtom)
 
-    if (isTeammate || isHiddenView(e.props)) {
+    if (!enabled || isTeammate || isHiddenView(e.props)) {
       return next(e)
     }
 

@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { CAUTION_PERCENT, DANGER_PERCENT, buildSegments, isHiddenView, isTeammatePane, levelOf } from './register'
+import { CAUTION_PERCENT, DANGER_PERCENT, buildSegments, isHiddenView, isTeammatePane, levelOf, parseToggle } from './register'
 
 test('builds a gauge segment per window and for tokens', () => {
   const segments = buildSegments({ tokens: 45_000, window: 200_000, percent: 23 }, [
@@ -72,4 +72,12 @@ test('detects a tmux teammate pane from the team config', () => {
   expect(isTeammatePane(configs, 'leader')).toBe(false)
   expect(isTeammatePane(configs, undefined)).toBe(false)
   expect(isTeammatePane([], '%13')).toBe(false)
+})
+
+test('parseToggle flips without args and obeys on / off', () => {
+  expect(parseToggle('', true)).toBe(false)
+  expect(parseToggle('  ', false)).toBe(true)
+  expect(parseToggle('on', false)).toBe(true)
+  expect(parseToggle('OFF', true)).toBe(false)
+  expect(parseToggle('maybe', true)).toBeUndefined()
 })
