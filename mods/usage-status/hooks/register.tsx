@@ -35,8 +35,11 @@ export const levelOf = (segment: Segment): Level =>
 
 // サブエージェント・チームメイトのtranscriptを開いている間は、ゲージを出さない。
 // props.view が無いエンジンでは、メイン会話として扱う。
-export const isHiddenView = (props: { hasSurvey: boolean; view?: { agentId?: string } }): boolean =>
-  props.hasSurvey || props.view?.agentId !== undefined
+// PromptHint の props には hasSurvey も view も無い(型定義)。無い項目は false として扱う。
+type ViewProps = { hasSurvey?: boolean; view?: { agentId?: string } }
+
+export const isHiddenView = (props: ViewProps): boolean =>
+  props.hasSurvey === true || props.view?.agentId !== undefined
 
 type TeamConfig = { members?: { backendType?: string; tmuxPaneId?: string }[] }
 
@@ -163,7 +166,7 @@ export const register: Register = on => {
     const isTeammate = await read($, teammateAtom)
     const enabled = await read($, enabledAtom)
 
-    if (!enabled || isTeammate || isHiddenView(e.props)) {
+    if (!enabled || isTeammate || isHiddenView(e.props as ViewProps)) {
       return next(e)
     }
 
@@ -175,6 +178,8 @@ export const register: Register = on => {
             .usage()
             .then(u => buildSegments(u.context, u.rateLimits))
             .catch(() => [] as Segment[])
+
+    const original = await next(e)
 
     if (segments.length === 0) {
       return original
