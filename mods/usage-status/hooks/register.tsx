@@ -161,10 +161,9 @@ export const register: Register = on => {
     const stored = await read($, segmentsAtom)
     const isTeammate = await read($, teammateAtom)
     const enabled = await read($, enabledAtom)
-    const original = await next(e)
 
-    if (!enabled || isTeammate) {
-      return original
+    if (!enabled || isTeammate || isHiddenView(e.props)) {
+      return next(e)
     }
 
     // resumeで別セッションに切り替わると、atomが空のまま残る。空のときは使用量を直接取得する。
