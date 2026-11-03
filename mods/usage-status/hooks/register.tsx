@@ -156,7 +156,8 @@ export const register: Register = on => {
     return next(e)
   })
 
-  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+  // モード行(PromptHint)の下にゲージを足す。engineの行は next(e) でそのまま残す。
+  on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
     const stored = await read($, segmentsAtom)
     const isTeammate = await read($, teammateAtom)
     const enabled = await read($, enabledAtom)
@@ -175,16 +176,14 @@ export const register: Register = on => {
             .catch(() => [] as Segment[])
 
     if (segments.length === 0) {
-      return next(e)
+      return original
     }
 
     const { Box, Text } = $.ui.resolve(e)
 
     return (
       <Box flexDirection="column">
-        <Text key="divider" dimColor>
-          {'─'.repeat(e.props.bodyColumns)}
-        </Text>
+        {original}
         <Box key="gauges">
           {segments.map((s, i) => (
             <Text key={`s${i}`} color={LEVEL_COLORS[levelOf(s)]}>
