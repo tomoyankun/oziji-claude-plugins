@@ -55,6 +55,7 @@ test('hides the band in an agent transcript or during a survey', () => {
   expect(isHiddenView({ hasSurvey: false, view: {} })).toBe(false)
   expect(isHiddenView({ hasSurvey: false, view: { agentId: 'agent-1' } })).toBe(true)
   expect(isHiddenView({ hasSurvey: true, view: {} })).toBe(true)
+  expect(isHiddenView({ hasSurvey: false })).toBe(false)
 })
 
 test('detects a tmux teammate pane from the team config', () => {

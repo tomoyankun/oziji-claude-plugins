@@ -34,8 +34,9 @@ export const levelOf = (segment: Segment): Level =>
   segment.percent >= DANGER_PERCENT ? 'danger' : segment.percent >= CAUTION_PERCENT ? 'caution' : 'ok'
 
 // サブエージェント・チームメイトのtranscriptを開いている間は、ゲージを出さない。
-export const isHiddenView = (props: { hasSurvey: boolean; view: { agentId?: string } }): boolean =>
-  props.hasSurvey || props.view.agentId !== undefined
+// props.view が無いエンジンでは、メイン会話として扱う。
+export const isHiddenView = (props: { hasSurvey: boolean; view?: { agentId?: string } }): boolean =>
+  props.hasSurvey || props.view?.agentId !== undefined
 
 type TeamConfig = { members?: { backendType?: string; tmuxPaneId?: string }[] }
 
