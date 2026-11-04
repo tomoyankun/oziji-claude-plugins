@@ -1,5 +1,5 @@
 {
-  "name": "claude-mods-plugins",
+  "name": "oziji-claude-plugins",
   "owner": { "name": "tomoyankun" },
   "metadata": {
     "description": "Claude Code の mod / プラグイン集。使用量ゲージを表示する usage-status を配布する",

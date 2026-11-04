@@ -76,12 +76,12 @@ GitHub 以外から取得するときは、`tomoyankun/oziji-claude-plugins` の
 ```json
 {
   "extraKnownMarketplaces": {
-    "claude-mods-plugins": {
+    "oziji-claude-plugins": {
       "source": { "source": "github", "repo": "tomoyankun/oziji-claude-plugins" }
     }
   },
   "enabledPlugins": {
-    "usage-status@claude-mods-plugins": true
+    "usage-status@oziji-claude-plugins": true
   }
 }
 ```
@@ -90,8 +90,8 @@ GitHub 以外から取得するときは、`tomoyankun/oziji-claude-plugins` の
 
 更新するときは、先に新しいバージョンをリリースします。手順は「開発」節の「リリース手順」を参照してください。リリース後に、導入先で次の操作を順に行います。
 
-1. `claude plugin marketplace update claude-mods-plugins` を実行します。
-2. `claude plugin update usage-status@claude-mods-plugins` を実行します。
+1. `claude plugin marketplace update oziji-claude-plugins` を実行します。
+2. `claude plugin update usage-status@oziji-claude-plugins` を実行します。
 3. `/reload-plugins` を実行します。
 
 ### 方法B: clone したフォルダを直接読み込む(開発・個人利用向け)
