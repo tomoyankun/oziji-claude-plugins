@@ -11,6 +11,9 @@ const teammateAtom = atom({ plugin: 'usage-status', key: 'isTeammate' } as const
 // 表示のオン・オフ。再起動後も保つため、ファイルに保存する。
 const enabledAtom = atom({ plugin: 'usage-status', key: 'enabled' } as const, true)
 const SETTINGS_FILE = '.claude/usage-status.json'
+// デスクトップアプリには PromptHint が無い。ゲージはペインにも出せる。
+const PANE = 'usage-status'
+const PANE_TITLE = '使用量'
 
 const LABELS: Record<string, string> = { five_hour: '5h', seven_day: '7d' }
 const GAUGE_WIDTH = 10
@@ -70,22 +73,36 @@ export const parseToggle = (args: string, current: boolean): boolean | undefined
   return word === '' ? !current : word === 'on' ? true : word === 'off' ? false : undefined
 }
 
-const readEnabled = async ($: EngineInterface): Promise<boolean> => {
+// pane: true は常に開く。false は開かない。未設定はデスクトップアプリのときだけ開く。
+type Settings = { enabled: boolean; pane: boolean | undefined }
+
+const readSettings = async ($: EngineInterface): Promise<Settings> => {
   try {
     const home = await $.env.get('HOME')
+    const saved = JSON.parse(await $.fs.read(`${home}/${SETTINGS_FILE}`))
 
-    return JSON.parse(await $.fs.read(`${home}/${SETTINGS_FILE}`)).enabled !== false
+    return { enabled: saved.enabled !== false, pane: typeof saved.pane === 'boolean' ? saved.pane : undefined }
   } catch {
-    // ファイルが無い、または読めないときは、表示する。
-    return true
+    // ファイルが無い、または読めないときは、ゲージを表示し、ペインは未設定にする。
+    return { enabled: true, pane: undefined }
   }
 }
 
-const writeEnabled = async ($: EngineInterface, enabled: boolean): Promise<void> => {
+const writeSettings = async ($: EngineInterface, patch: Partial<Settings>): Promise<void> => {
   const home = await $.env.get('HOME')
+  const current = await readSettings($)
 
-  await $.fs.write(`${home}/${SETTINGS_FILE}`, JSON.stringify({ enabled }))
+  await $.fs.write(`${home}/${SETTINGS_FILE}`, JSON.stringify({ ...current, ...patch }))
 }
+
+const hasDesktop = async ($: EngineInterface): Promise<boolean> =>
+  $.session
+    .surfaces()
+    .then(list => list.includes('desktop'))
+    .catch(() => false)
+
+const shouldOpenPane = async ($: EngineInterface, settings: Settings): Promise<boolean> =>
+  settings.pane ?? (await hasDesktop($))
 
 const pad = (n: number): string => String(n).padStart(2, '0')
 
@@ -127,9 +144,10 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'usage-status',
-      description: '使用量ゲージの表示をオン・オフする(引数: on / off。省略すると反転)',
+      description: '使用量ゲージの表示をオン・オフする(引数: on / off / pane / pane off。省略すると反転)',
     })
-    const enabledFromFile = await readEnabled($)
+    const settings = await readSettings($)
+    const enabledFromFile = settings.enabled
     const pane = await $.env.get('TMUX_PANE')
     const detected = await readTeamConfigs($).then(c => isTeammatePane(c, pane)).catch(() => false)
     await update($, teammateAtom, () => detected)
@@ -137,19 +155,55 @@ export const register: Register = on => {
     const usage = await $.session.usage()
     await update($, segmentsAtom, () => buildSegments(usage.context, usage.rateLimits))
 
+    if (!detected && (await shouldOpenPane($, settings))) {
+      void $.ui.open({ id: PANE, title: PANE_TITLE })
+    }
+
+    return next(e)
+  })
+
+  // デスクトップアプリは session.start の後に接続することがある。接続した時点でも開く。
+  on('session.attach', { surface: 'desktop' }, async ($, e, next) => {
+    const settings = await readSettings($)
+    const isTeammate = await read($, teammateAtom)
+
+    if (!isTeammate && settings.pane !== false) {
+      void $.ui.open({ id: PANE, title: PANE_TITLE })
+    }
+
     return next(e)
   })
 
   on('command.run', { command: 'usage-status' }, async ($, e) => {
+    const words = e.args.trim().toLowerCase().split(/\s+/)
+
+    if (words[0] === 'pane') {
+      if (words[1] === 'off') {
+        await $.ui.close({ id: PANE })
+        await writeSettings($, { pane: false }).catch(() => undefined)
+
+        return { text: '使用量ペインを閉じました。次回から開きません。デスクトップアプリでも開きません。' }
+      }
+
+      const opened = await $.ui.open({ id: PANE, title: PANE_TITLE })
+      await writeSettings($, { pane: true }).catch(() => undefined)
+
+      return {
+        text: opened.isPlaced
+          ? '使用量ペインを開きました。次回から常に開きます。'
+          : '使用量ペインを登録しました。表示できる幅になると開きます。',
+      }
+    }
+
     const current = await read($, enabledAtom)
     const next = parseToggle(e.args, current)
 
     if (next === undefined) {
-      return { text: `引数は on または off を指定してください。現在: ${current ? 'on' : 'off'}` }
+      return { text: `引数は on、off、pane、pane off のどれかを指定してください。現在: ${current ? 'on' : 'off'}` }
     }
 
     await update($, enabledAtom, () => next)
-    await writeEnabled($, next).catch(() => undefined)
+    await writeSettings($, { enabled: next }).catch(() => undefined)
 
     return { text: `使用量ゲージを ${next ? 'on' : 'off'} にしました。` }
   })
@@ -198,6 +252,36 @@ export const register: Register = on => {
             </Text>
           ))}
         </Box>
+      </Box>
+    )
+  })
+
+  // ペインに、同じゲージを縦に並べる。
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+    const stored = await read($, segmentsAtom)
+    const enabled = await read($, enabledAtom)
+    const { Box, Text } = $.ui.resolve(e)
+
+    if (!enabled) {
+      return <Text dimColor>ゲージはオフです。/usage-status で戻せます。</Text>
+    }
+
+    const segments =
+      stored.length > 0
+        ? stored
+        : await $.session
+            .usage()
+            .then(u => buildSegments(u.context, u.rateLimits))
+            .catch(() => [] as Segment[])
+
+    return (
+      <Box flexDirection="column">
+        {segments.length === 0 && <Text dimColor>使用量はまだありません。</Text>}
+        {segments.map((s, i) => (
+          <Text key={`p${i}`} color={LEVEL_COLORS[levelOf(s)]}>
+            {s.text}
+          </Text>
+        ))}
       </Box>
     )
   })
