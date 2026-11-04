@@ -55,4 +55,4 @@ claude --plugin-dir mods/<mod名>      # mod を読み込んだ状態でセッ�
 
 ## mod 一覧
 
-- `usage-status` — 5時間・1週間の使用量制限とセッションのトークン使用量を、モード行(`PromptHint`)の下にゲージで常時表示する。50%以上は黄、80%以上は赤。`/usage-status` で表示をオン・オフする。`types/index.d.ts` に型契約がある。
+- `usage-status` — 5時間・1週間の使用量制限とセッションのトークン使用量を、モード行(`PromptHint`)の下にゲージで常時表示する。50%以上は黄、80%以上は赤。デスクトップアプリではペイン(`/usage-status pane` / `pane off`)にも出す。`/usage-status` で表示をオン・オフする。`types/index.d.ts` に型契約がある。
