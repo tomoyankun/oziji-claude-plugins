@@ -6,9 +6,16 @@ Claude Code の mod(プラグイン)を作るためのリポジトリです。
 
 | mod | 内容 |
 | --- | --- |
-| `usage-status` | 5時間枠と1週間枠の使用量制限、およびセッションのトークン使用量を、入力欄の上にゲージで常時表示する。80%以上は赤で表示する |
+| `usage-status` | 5時間枠と1週間枠の使用量制限、およびセッションのトークン使用量を、モード行の下にゲージで常時表示する。50%以上は黄、80%以上は赤で表示する |
 
 5時間枠と1週間枠の値は、サブスクリプションを使っているときだけ表示されます。
+
+### usage-status の動作
+
+- 5時間枠と1週間枠のゲージに、リセット時刻(`↻`)を付けます。
+- tmux のチームメイトのペインには、ゲージを表示しません。
+- `/usage-status` で、表示をオン・オフします。引数なしは反転します。`on` または `off` で指定できます。設定は `~/.claude/usage-status.json` に保存され、再起動後も保たれます。
+- 既知の制限: アンケート表示中とエージェント transcript 表示中も、ゲージを表示します。`PromptHint` の props に、この2つの状態が無いためです。
 
 ## 設定手順
 
@@ -34,7 +41,7 @@ claude --plugin-dir mods/usage-status
 
 ### 3. 動作を確認する
 
-- `usage-status`: 入力欄の上に、使用量のゲージが表示されます。
+- `usage-status`: モード行の下に、使用量のゲージが表示されます。`/usage-status` でオン・オフを切り替えられます。
 
 ### 4. 検証とテスト
 
@@ -138,18 +145,17 @@ mods/<mod名>/
 
 ### リリース手順
 
-`.claude-plugin/marketplace.json` は、mod を `git-subdir` 形式で、タグ(`ref`)に固定しています。`main` に push しても、利用者には新しい版が届きません。次の順でリリースします。
+`.claude-plugin/marketplace.json` は、mod を相対パス(`./mods/<mod名>`)で登録しています。利用者は、`plugin.json` の `version` が上がったときに、更新を検知します。次の順でリリースします。
 
 `main` は保護されていて、直接 push できません。すべての変更を PR で行います。
 
 1. ブランチを切ります。`mods/<mod名>/.claude-plugin/plugin.json` の `version` を上げます。`version` が変わらないと、利用者側で更新が検知されません。
-2. `.claude-plugin/marketplace.json` の該当 mod の `ref` を、新しいタグ名(例: `v0.8.0`)に書き換えます。
-3. PR を作成して、マージします。
-4. マージ後の `main` のコミットに、`ref` と同じ名前のタグを打ち、push します。タグが無い間は、その mod のインストールが失敗します。
+2. PR を作成して、マージします。
+3. マージ後の `main` のコミットに、`v<version>` のタグを打ち、push します。タグはリリースの記録です。
 
    ```bash
    git switch main && git pull
-   git tag -a v0.8.0 -m "usage-status 0.8.0"
-   git push origin v0.8.0
+   git tag -a v0.8.2 -m "usage-status 0.8.2"
+   git push origin v0.8.2
    ```
-5. 利用者に、「方法A」の更新操作(3つの手順)を案内します。
+4. 利用者に、「方法A」の更新操作(3つの手順)を案内します。
