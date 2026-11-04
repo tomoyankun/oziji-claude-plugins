@@ -11,10 +11,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ユーザーとのやり取りは、作成を始める前も含めて常に日本語で行う。
 - mod やそのフックモジュールを作成・デバッグするときは `plugin-authoring` スキルを使う。
 - `main` ブランチは保護されていて、直接 push できない。ブランチを切り、`gh pr create` で PR を作成してマージする。承認者は `tomoyankun` だけである(`.github/CODEOWNERS`)。
-- mod のバージョンを上げるときは、次の3つを同じ値にする。手順は README の「リリース手順」に従う。
+- mod のバージョンを上げるときは、次の2つを同じ値にする。手順は README の「リリース手順」に従う。
   - `plugin.json` の `version`
-  - `.claude-plugin/marketplace.json` の `ref`
-  - Git タグ
+  - Git タグ(`v<version>`。マージ後に打つ。リリースの記録)
 
 ## 構成
 
@@ -39,4 +38,4 @@ claude --plugin-dir mods/<mod名>      # mod を読み込んだ状態でセッ�
 
 ## mod 一覧
 
-- `usage-status` — 5時間・1週間の使用量制限とセッションのトークン使用量を、入力欄の上にゲージで常時表示する。80%以上は赤。`types/index.d.ts` に型契約がある。
+- `usage-status` — 5時間・1週間の使用量制限とセッションのトークン使用量を、モード行(`PromptHint`)の下にゲージで常時表示する。50%以上は黄、80%以上は赤。`/usage-status` で表示をオン・オフする。`types/index.d.ts` に型契約がある。
