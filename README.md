@@ -159,3 +159,7 @@ mods/<mod名>/
    git push origin v0.8.2
    ```
 4. 利用者に、「方法A」の更新操作(3つの手順)を案内します。
+
+## ライセンス
+
+[MIT License](./LICENSE) です。
