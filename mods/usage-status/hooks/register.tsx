@@ -11,7 +11,7 @@ const teammateAtom = atom({ plugin: 'usage-status', key: 'isTeammate' } as const
 // 表示のオン・オフ。再起動後も保つため、ファイルに保存する。
 const enabledAtom = atom({ plugin: 'usage-status', key: 'enabled' } as const, true)
 const SETTINGS_FILE = '.claude/usage-status.json'
-// デスクトップアプリには PromptHint が無い。ゲージはペインにも出せる。
+// デスクトップアプリでは、モード行の下に加えて、ペインにもゲージを出す。
 const PANE = 'usage-status'
 const PANE_TITLE = '使用量'
 
