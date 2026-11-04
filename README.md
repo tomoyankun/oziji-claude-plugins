@@ -25,8 +25,8 @@ Claude Code の mod(プラグイン)を作るためのリポジトリです。
 - このリポジトリを clone します。
 
 ```bash
-git clone https://github.com/tomoyankun/claude-mods-plugins
-cd claude-mods-plugins
+git clone https://github.com/tomoyankun/oziji-claude-plugins
+cd oziji-claude-plugins
 ```
 
 ### 2. mod を読み込んで起動する
@@ -59,7 +59,7 @@ claude plugin test mods/<mod名>       # hooks/*.test.ts の実行
 Claude Code のプロンプトに、次のコマンドを入力します。
 
 ```
-/plugin install usage-status --marketplace tomoyankun/claude-mods-plugins
+/plugin install usage-status --marketplace tomoyankun/oziji-claude-plugins
 ```
 
 初回は `Add marketplace?` と表示されます。`y` を選び、続けてスコープを選びます。
@@ -69,19 +69,19 @@ Claude Code のプロンプトに、次のコマンドを入力します。
 
 インストール後は、同じセッションで mod が有効になります。
 
-GitHub 以外から取得するときは、`tomoyankun/claude-mods-plugins` の代わりに、git の URL かローカルフォルダのパスを指定します。
+GitHub 以外から取得するときは、`tomoyankun/oziji-claude-plugins` の代わりに、git の URL かローカルフォルダのパスを指定します。
 
 導入先の `.claude/settings.json` に次の内容を書くと、そのリポジトリを開いて信頼したメンバー全員に、marketplace の追加と mod の有効化が案内されます。
 
 ```json
 {
   "extraKnownMarketplaces": {
-    "claude-mods-plugins": {
-      "source": { "source": "github", "repo": "tomoyankun/claude-mods-plugins" }
+    "oziji-claude-plugins": {
+      "source": { "source": "github", "repo": "tomoyankun/oziji-claude-plugins" }
     }
   },
   "enabledPlugins": {
-    "usage-status@claude-mods-plugins": true
+    "usage-status@oziji-claude-plugins": true
   }
 }
 ```
@@ -90,8 +90,8 @@ GitHub 以外から取得するときは、`tomoyankun/claude-mods-plugins` の�
 
 更新するときは、先に新しいバージョンをリリースします。手順は「開発」節の「リリース手順」を参照してください。リリース後に、導入先で次の操作を順に行います。
 
-1. `claude plugin marketplace update claude-mods-plugins` を実行します。
-2. `claude plugin update usage-status@claude-mods-plugins` を実行します。
+1. `claude plugin marketplace update oziji-claude-plugins` を実行します。
+2. `claude plugin update usage-status@oziji-claude-plugins` を実行します。
 3. `/reload-plugins` を実行します。
 
 ### 方法B: clone したフォルダを直接読み込む(開発・個人利用向け)
@@ -100,7 +100,7 @@ GitHub 以外から取得するときは、`tomoyankun/claude-mods-plugins` の�
 
 ```bash
 cd /path/to/other-repo
-claude --plugin-dir ~/projects/claude-mods-plugins/mods/usage-status
+claude --plugin-dir ~/projects/oziji-claude-plugins/mods/usage-status
 ```
 
 毎回指定したくないときは、`~/.claude/settings.json` の `env` に `CLAUDE_CODE_PLUGIN_DIRS` を書きます。値には、絶対パスを指定します。`~` を使えます。複数のパスは、パス区切り文字で連結します。プロジェクト側の settings には書けません。
@@ -108,7 +108,7 @@ claude --plugin-dir ~/projects/claude-mods-plugins/mods/usage-status
 ```json
 {
   "env": {
-    "CLAUDE_CODE_PLUGIN_DIRS": "~/projects/claude-mods-plugins/mods/usage-status"
+    "CLAUDE_CODE_PLUGIN_DIRS": "~/projects/oziji-claude-plugins/mods/usage-status"
   }
 }
 ```
