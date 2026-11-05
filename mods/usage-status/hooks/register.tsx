@@ -133,7 +133,7 @@ export const buildSegments = (
   const used = context.tokens ?? 0
   const percent = context.percent ?? 0
   const tokens: Segment = {
-    text: `context usage ${gauge(percent)} ${formatTokens(used)}/${formatTokens(context.window)} (${percent}%)`,
+    text: `context ${gauge(percent)} ${formatTokens(used)}/${formatTokens(context.window)} (${percent}%)`,
     percent,
   }
 

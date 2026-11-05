@@ -10,7 +10,7 @@ test('builds a gauge segment per window and for tokens', () => {
   expect(segments.map(s => s.text)).toEqual([
     '5h █░░░░░░░░░ 12.5%',
     '7d █████████░ 85%',
-    'context usage ██░░░░░░░░ 45k/200k (23%)',
+    'context ██░░░░░░░░ 45k/200k (23%)',
   ])
   expect(segments.map(s => s.percent)).toEqual([12.5, 85, 23])
 })
@@ -24,7 +24,7 @@ test('appends the reset time in local time', () => {
   expect(segments.map(s => s.text)).toEqual([
     '5h ████░░░░░░ 38% ↻ 15:05',
     '7d ████░░░░░░ 36% ↻ 10/9 15:05',
-    'context usage ░░░░░░░░░░ 0/200k (0%)',
+    'context ░░░░░░░░░░ 0/200k (0%)',
   ])
 })
 
@@ -37,7 +37,7 @@ test('omits the reset time when it is missing or invalid', () => {
 })
 
 test('shows only tokens off a subscription', () => {
-  expect(buildSegments({ window: 200_000 }, [])).toEqual([{ text: 'context usage ░░░░░░░░░░ 0/200k (0%)', percent: 0 }])
+  expect(buildSegments({ window: 200_000 }, [])).toEqual([{ text: 'context ░░░░░░░░░░ 0/200k (0%)', percent: 0 }])
 })
 
 test('classifies a segment into three levels', () => {
