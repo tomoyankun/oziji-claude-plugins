@@ -15,6 +15,11 @@
       "name": "compact-assist",
       "source": "./mods/compact-assist",
       "description": "コンテキスト使用率が70%に達したら、モード行の下に compact の合図を表示する。/compact-memo でメモを書き出す"
+    },
+    {
+      "name": "notify-on-wait",
+      "source": "./mods/notify-on-wait",
+      "description": "許可の確認とモデルからの質問が出たとき、0.3秒の音を鳴らし、回答まで帯とペインを点滅させる"
     }
   ]
 }
