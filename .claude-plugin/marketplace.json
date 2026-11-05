@@ -10,6 +10,11 @@
       "name": "usage-status",
       "source": "./mods/usage-status",
       "description": "5時間・1週間の使用量制限とセッションのトークン使用量を、モード行の下にゲージで常時表示する。80%以上は赤"
+    },
+    {
+      "name": "compact-assist",
+      "source": "./mods/compact-assist",
+      "description": "コンテキスト使用率が70%に達したら、モード行の下に compact の合図を表示する。/compact-memo でメモを書き出す"
     }
   ]
 }
