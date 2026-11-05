@@ -7,5 +7,5 @@ test('shows no notice under 70%', () => {
 })
 
 test('asks for a memo and /compact from 70%', () => {
-  expect(noticeOf(70)).toBe('context 70%: メモを残して /compact を実行')
+  expect(noticeOf(70)).toBe('context 70%:')
 })

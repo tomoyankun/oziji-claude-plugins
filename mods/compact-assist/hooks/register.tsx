@@ -11,7 +11,7 @@ export const COMPACT_INSTRUCTIONS = (path: string): string =>
 export const MEMO_PATH = '~/.claude/compact-memo.md'
 
 export const noticeOf = (percent: number): string | undefined =>
-  percent >= ACT_PERCENT ? `context ${percent}%: メモを残して /compact を実行` : undefined
+  percent >= ACT_PERCENT ? `context ${percent}%:` : undefined
 
 export const memoPrompt = (path: string): string => `このセッションの内容を、ファイル ${path} に書き出してください。Write ツールを使い、絶対パスで指定してください。既存のファイルは上書きしてください。次の4つの見出しで、箇条書きにしてください。
 
@@ -85,6 +85,7 @@ export const register: Register = on => {
     $.clock.after(500, () =>
       $.session
         .compact({ instructions: COMPACT_INSTRUCTIONS(path) })
+        .then(() => $.ui.toast('compact-memo: compact が完了しました'))
         .catch(error => $.ui.toast(`compact-memo: compact に失敗しました: ${String(error)}`)),
     )
 
@@ -109,7 +110,7 @@ export const register: Register = on => {
           <Text color="error">{notice} </Text>
           <Button
             key="memo"
-            label="メモを書いて compact"
+            label="メモを残して /compact を実行"
             onPress={() => {
               void update($, pendingAtom, () => true)
               void $.env
