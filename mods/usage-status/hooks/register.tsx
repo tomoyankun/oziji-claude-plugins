@@ -104,6 +104,21 @@ const hasDesktop = async ($: EngineInterface): Promise<boolean> =>
 const shouldOpenPane = async ($: EngineInterface, settings: Settings): Promise<boolean> =>
   settings.pane ?? (await hasDesktop($))
 
+const BAR_COLORS = { ok: '#2e9e5b', caution: '#d4a017', danger: '#d64545' } as const
+const BAR_WIDTH = 200
+
+// デスクトップのペイン用。割合に応じて塗る棒を、SVGで描く。
+export const barSvg = (percent: number, level: Level): string => {
+  const w = Math.round((Math.min(100, Math.max(0, percent)) / 100) * BAR_WIDTH)
+
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${BAR_WIDTH}" height="10" viewBox="0 0 ${BAR_WIDTH} 10">` +
+    `<rect width="${BAR_WIDTH}" height="10" rx="5" fill="#888" fill-opacity="0.25"/>` +
+    (w > 0 ? `<rect width="${w}" height="10" rx="5" fill="${BAR_COLORS[level]}"/>` : '') +
+    `</svg>`
+  )
+}
+
 const pad = (n: number): string => String(n).padStart(2, '0')
 
 // 5時間枠は当日中にリセットされるため時刻のみ、1週間枠は日付も示す。
@@ -128,6 +143,9 @@ export const buildSegments = (
     .map(r => ({
       text: `${LABELS[r.kind]} ${gauge(r.percentUsed)} ${r.percentUsed}%${formatReset(r.kind, r.resetsAt)}`,
       percent: r.percentUsed,
+      label: LABELS[r.kind],
+      value: `${r.percentUsed}%`,
+      reset: formatReset(r.kind, r.resetsAt).replace(' ↻ ', ''),
     }))
   // 最初の応答が返るまでtokensは無いので、0として空のゲージを出す。
   const used = context.tokens ?? 0
@@ -135,6 +153,9 @@ export const buildSegments = (
   const tokens: Segment = {
     text: `context ${gauge(percent)} ${formatTokens(used)}/${formatTokens(context.window)} (${percent}%)`,
     percent,
+    label: 'context',
+    value: `${formatTokens(used)}/${formatTokens(context.window)} (${percent}%)`,
+    reset: '',
   }
 
   return [...limits, tokens]
@@ -260,7 +281,8 @@ export const register: Register = on => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const stored = await read($, segmentsAtom)
     const enabled = await read($, enabledAtom)
-    const { Box, Text } = $.ui.resolve(e)
+    const ui = $.ui.resolve(e)
+    const { Box, Text } = ui
 
     if (!enabled) {
       return <Text dimColor>ゲージはオフです。/usage-status で戻せます。</Text>
@@ -277,11 +299,22 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column">
         {segments.length === 0 && <Text dimColor>使用量はまだありません。</Text>}
-        {segments.map((s, i) => (
-          <Text key={`p${i}`} color={LEVEL_COLORS[levelOf(s)]}>
-            {s.text}
-          </Text>
-        ))}
+        {segments.map((s, i) =>
+          'Svg' in ui && s.label !== undefined ? (
+            <Box key={`p${i}`} flexDirection="column" marginBottom={1}>
+              <Box justifyContent="space-between">
+                <Text bold>{s.label}</Text>
+                <Text color={LEVEL_COLORS[levelOf(s)]}>{s.value}</Text>
+              </Box>
+              <ui.Svg source={barSvg(s.percent, levelOf(s))} alt={`${s.label} ${s.value}`} width={BAR_WIDTH} />
+              {s.reset && <Text dimColor>リセット {s.reset}</Text>}
+            </Box>
+          ) : (
+            <Text key={`p${i}`} color={LEVEL_COLORS[levelOf(s)]}>
+              {s.text}
+            </Text>
+          ),
+        )}
       </Box>
     )
   })

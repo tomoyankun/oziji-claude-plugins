@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { CAUTION_PERCENT, DANGER_PERCENT, buildSegments, isHiddenView, isTeammatePane, levelOf, parseToggle } from './register'
+import { CAUTION_PERCENT, DANGER_PERCENT, barSvg, buildSegments, isHiddenView, isTeammatePane, levelOf, parseToggle } from './register'
 
 test('builds a gauge segment per window and for tokens', () => {
   const segments = buildSegments({ tokens: 45_000, window: 200_000, percent: 23 }, [
@@ -37,7 +37,7 @@ test('omits the reset time when it is missing or invalid', () => {
 })
 
 test('shows only tokens off a subscription', () => {
-  expect(buildSegments({ window: 200_000 }, [])).toEqual([{ text: 'context ░░░░░░░░░░ 0/200k (0%)', percent: 0 }])
+  expect(buildSegments({ window: 200_000 }, [])).toMatchObject([{ text: 'context ░░░░░░░░░░ 0/200k (0%)', percent: 0, label: 'context' }])
 })
 
 test('classifies a segment into three levels', () => {
@@ -81,4 +81,21 @@ test('parseToggle flips without args and obeys on / off', () => {
   expect(parseToggle('on', false)).toBe(true)
   expect(parseToggle('OFF', true)).toBe(false)
   expect(parseToggle('maybe', true)).toBeUndefined()
+})
+
+test('splits a segment into label, value and reset for the pane', () => {
+  const resetsAt = new Date(2026, 9, 9, 15, 5).toISOString()
+  const [five, seven] = buildSegments({ window: 200_000 }, [
+    { kind: 'five_hour', percentUsed: 38, resetsAt },
+    { kind: 'seven_day', percentUsed: 36 },
+  ])
+
+  expect([five?.label, five?.value, five?.reset]).toEqual(['5h', '38%', '15:05'])
+  expect(seven?.reset).toBe('')
+})
+
+test('draws the bar fill in proportion to the percent', () => {
+  expect(barSvg(50, 'ok')).toContain('width="100" height="10" rx="5" fill="#2e9e5b"')
+  expect(barSvg(0, 'ok')).not.toContain('#2e9e5b')
+  expect(barSvg(150, 'danger')).toContain('width="200" height="10" rx="5" fill="#d64545"')
 })
