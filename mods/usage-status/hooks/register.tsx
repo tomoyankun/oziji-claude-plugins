@@ -13,7 +13,7 @@ const enabledAtom = atom({ plugin: 'usage-status', key: 'enabled' } as const, tr
 const SETTINGS_FILE = '.claude/usage-status.json'
 // デスクトップアプリでは、モード行の下に加えて、ペインにもゲージを出す。
 const PANE = 'usage-status'
-const PANE_TITLE = 'ステータス'
+const PANE_TITLE = 'Status'
 
 const LABELS: Record<string, string> = { five_hour: '5h', seven_day: '7d' }
 const GAUGE_WIDTH = 10
@@ -285,7 +285,7 @@ export const register: Register = on => {
     const { Box, Text } = ui
 
     if (!enabled) {
-      return <Text dimColor>ゲージはオフです。/usage-status で戻せます。</Text>
+      return <Text dimColor>Gauges are off. Run /usage-status to turn them on.</Text>
     }
 
     const segments =
@@ -298,8 +298,8 @@ export const register: Register = on => {
 
     return (
       <Box flexDirection="column">
-        <Text dimColor>使用量</Text>
-        {segments.length === 0 && <Text dimColor>使用量はまだありません。</Text>}
+        <Text dimColor>Usage</Text>
+        {segments.length === 0 && <Text dimColor>No usage data yet.</Text>}
         {segments.map((s, i) =>
           'Svg' in ui && s.label !== undefined ? (
             <Box key={`p${i}`} flexDirection="column" marginBottom={1}>
@@ -308,7 +308,7 @@ export const register: Register = on => {
                 <Text color={LEVEL_COLORS[levelOf(s)]}>{s.value}</Text>
               </Box>
               <ui.Svg source={barSvg(s.percent, levelOf(s))} alt={`${s.label} ${s.value}`} width={BAR_WIDTH} />
-              {s.reset && <Text dimColor>リセット {s.reset}</Text>}
+              {s.reset && <Text dimColor>Resets {s.reset}</Text>}
             </Box>
           ) : (
             <Text key={`p${i}`} color={LEVEL_COLORS[levelOf(s)]}>

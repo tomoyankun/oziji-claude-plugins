@@ -34,9 +34,9 @@ test('Pane shows gauges on desktop', async ($, on) => {
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
   const ui = await $.ui.mount({
     plugin: 'usage-status', component: 'Pane', requestId: 'usage-status', surface: 'desktop',
-    props: { title: 'ステータス', isFocused: false, bodyColumns: 40, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} },
+    props: { title: 'Status', isFocused: false, bodyColumns: 40, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} },
   } as any)
-  expect((await ui.find({ type: 'Text', text: /^使用量$/ }))?.text).toBe('使用量')
+  expect((await ui.find({ type: 'Text', text: /^Usage$/ }))?.text).toBe('Usage')
   expect(await ui.find({ type: 'Text', text: /context/ })).toBeTruthy()
   expect((await ui.find({ type: 'Text', text: /45k/ }))?.text).toMatch(/45k\/200k/)
   await ui.unmount()
