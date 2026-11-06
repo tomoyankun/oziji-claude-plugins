@@ -1,38 +1,40 @@
 # oziji-claude-plugins
 
-Claude Code の mod(プラグイン)を集めたリポジトリです。mod は、ステータス表示やスラッシュコマンドなど、Claude Code 自身のインターフェースや挙動を変更します。
+English | [日本語](./README.ja.md)
 
-このリポジトリは、Claude Code の marketplace です。`/plugin install` で、mod をインストールできます。
+A collection of Claude Code mods (plugins). A mod changes the interface or behavior of Claude Code itself, such as a status display or a slash command.
 
-## mod 一覧
+This repository is a Claude Code marketplace. Install a mod with `/plugin install`.
 
-| mod | 内容 |
+## Mods
+
+| Mod | Description |
 | --- | --- |
-| `usage-status` | 5時間枠と1週間枠の使用量制限、およびセッションのトークン使用量を、モード行の下にゲージで常時表示する。50%以上は黄、80%以上は赤で表示する |
-| `compact-assist` | コンテキスト使用率が70%に達したら、合図とボタンを表示する。ボタンを押すと、メモを書き出してから compact を実行する |
-| `notify-on-wait` | 許可の確認とモデルからの質問が出たとき、0.3秒の音を鳴らす。回答するまで、プロンプト上の帯とペインを点滅させる |
+| `usage-status` | Always shows the 5-hour and 1-week usage limits and the session token usage as gauges below the mode line. A gauge turns yellow at 50% and red at 80%. |
+| `compact-assist` | Shows a cue and a button when context usage reaches 70%. The button writes a memo, then runs compact. |
+| `notify-on-wait` | Plays a 0.3-second sound when a permission prompt or a question from the model appears. Blinks the band above the prompt and a pane until you answer. |
 
-## インストール
+## Install
 
-前提: Claude Code をインストールし、`claude` コマンドが使える状態にします。
+Prerequisite: Claude Code is installed and the `claude` command works.
 
-Claude Code のプロンプトに、次のコマンドを入力します。
+Enter this command at the Claude Code prompt:
 
 ```
 /plugin install usage-status --marketplace tomoyankun/oziji-claude-plugins
 ```
 
-1. 初回は `Add marketplace?` と表示されます。`y` を選びます。
-2. スコープを選びます。
-   - **user**: どのリポジトリで開いたセッションでも、mod が有効になります。
-   - **project**: 導入先リポジトリの `.claude/settings.json` に、設定を記録します。チームで共有するときに使います。
-3. インストール後、同じセッションで mod が有効になります。
+1. The first time, Claude Code shows `Add marketplace?`. Select `y`.
+2. Select a scope.
+   - **user**: The mod is active in every session, in any repository.
+   - **project**: Claude Code records the setting in `.claude/settings.json` of the target repository. Use this to share the mod with a team.
+3. After the install, the mod is active in the same session.
 
-GitHub 以外から取得するときは、`tomoyankun/oziji-claude-plugins` の代わりに、git の URL かローカルフォルダのパスを指定します。
+To install from a source other than GitHub, give a git URL or a local folder path in place of `tomoyankun/oziji-claude-plugins`.
 
-### チームで共有する
+### Share with a team
 
-導入先リポジトリの `.claude/settings.json` に、次の内容を書きます。そのリポジトリを開いて信頼したメンバー全員に、marketplace の追加と mod の有効化が案内されます。
+Write this in `.claude/settings.json` of the target repository. Every member who opens and trusts the repository is prompted to add the marketplace and enable the mod.
 
 ```json
 {
@@ -47,31 +49,31 @@ GitHub 以外から取得するときは、`tomoyankun/oziji-claude-plugins` の
 }
 ```
 
-### 更新
+### Update
 
-1. `claude plugin marketplace update oziji-claude-plugins` を実行します。
-2. `claude plugin update usage-status@oziji-claude-plugins` を実行します。
-3. `/reload-plugins` を実行します。
+1. Run `claude plugin marketplace update oziji-claude-plugins`.
+2. Run `claude plugin update usage-status@oziji-claude-plugins`.
+3. Run `/reload-plugins`.
 
 ## usage-status
 
-ゲージの表示位置は、実行環境で異なります。
+The gauge position depends on the environment.
 
-- ターミナル: モード行の下に、1行で表示します。色は使用率で変わります。
+- Terminal: One line below the mode line. The color changes with the usage rate.
 
-  50%未満(緑):
+  Below 50% (green):
 
-  ![50%未満の表示](./docs/image/usage-status-terminal-1.png)
+  ![Display below 50%](./docs/image/usage-status-terminal-1.png)
 
-  50%以上(黄):
+  50% or more (yellow):
 
-  ![50%以上の表示](./docs/image/usage-status-terminal-2.png)
+  ![Display at 50% or more](./docs/image/usage-status-terminal-2.png)
 
-  80%以上(赤):
+  80% or more (red):
 
-  ![80%以上の表示](./docs/image/usage-status-terminal-3.png)
+  ![Display at 80% or more](./docs/image/usage-status-terminal-3.png)
 
-- デスクトップアプリ: 右側の「Status」ペインに、縦に並べて表示します。
+- Desktop app: The "Status" pane on the right side lists the gauges vertically.
 
   ```
   5h ████░░░░░░ 42% ↻ 18:30
@@ -79,55 +81,55 @@ GitHub 以外から取得するときは、`tomoyankun/oziji-claude-plugins` の
   context ██░░░░░░░░ 45k/200k (23%)
   ```
 
-各ゲージの意味は、次のとおりです。
+Each gauge means the following.
 
-- `5h`: 5時間枠の使用率とリセット時刻。
-- `7d`: 1週間枠の使用率とリセット日時。
-- `context`: セッションのトークン使用量/上限と、使用率。
+- `5h`: Usage rate of the 5-hour window and its reset time.
+- `7d`: Usage rate of the 1-week window and its reset date and time.
+- `context`: Session token usage / limit, and the usage rate.
 
-5時間枠と1週間枠の値は、サブスクリプションを使っているときだけ表示されます。
+The 5-hour and 1-week values appear only when you use a subscription.
 
-- 5時間枠と1週間枠のゲージに、リセット時刻(`↻`)を付けます。
-- tmux のチームメイトのペインには、ゲージを表示しません。
-- デスクトップアプリでは、モード行の下に加えて「Status」ペインにもゲージを縦に並べて表示します。ペインはデスクトップアプリが接続すると自動で開きます(0.9.0 以降)。
-  - `/usage-status pane`: ペインを開き、ターミナルでも次回から常に開きます。
-  - `/usage-status pane off`: ペインを閉じ、デスクトップアプリでも開かなくします。
-- `/usage-status` で、表示をオン・オフします。引数なしは反転します。`on` または `off` で指定できます。設定は `~/.claude/usage-status.json` に保存され、再起動後も保たれます。
-- 既知の制限: アンケート表示中とエージェント transcript 表示中も、ゲージを表示します。`PromptHint` の props に、この2つの状態が無いためです。
+- The 5-hour and 1-week gauges carry the reset time (`↻`).
+- The gauges do not appear in the pane of a tmux teammate.
+- In the desktop app, the "Status" pane shows the gauges in addition to the line below the mode line. The pane opens automatically when the desktop app connects (0.9.0 and later).
+  - `/usage-status pane`: Opens the pane. In the terminal, the pane also opens from the next session on.
+  - `/usage-status pane off`: Closes the pane. The desktop app no longer opens it.
+- `/usage-status` turns the display on or off. With no argument, it toggles. Give `on` or `off` to set the state. The setting is saved in `~/.claude/usage-status.json` and persists across restarts.
+- Known limitation: The gauges also appear while a survey or an agent transcript is shown. The props of `PromptHint` carry no information about these two states.
 
 ## compact-assist
 
-コンテキストが増えると、AI の精度が下がることがあります。`compact-assist` は、要約(`/compact`)の時機を知らせます。
+As context grows, the accuracy of the AI can drop. `compact-assist` tells you when to summarize (`/compact`).
 
-- 使用率が70%以上: 赤色の「context N%:」と、ボタン「メモを残して /compact を実行」を表示します。
-- ボタン: モデルに `~/.claude/compact-memo.md` を書かせます。書き終えたターンの直後に、`/compact` を自動で実行します。要約の指示には、メモを読み直す文を含めます。
-- `/compact-memo`: メモを書かせるだけで、compact は実行しません。メモには、決定事項、未完了のタスク、次の操作、失敗した方法を書きます。既存のファイルは上書きします。
+- Usage of 70% or more: Shows a red "context N%:" and a button, "メモを残して /compact を実行" (save a memo and run /compact).
+- Button: Makes the model write `~/.claude/compact-memo.md`. Right after the turn that writes the memo, the mod runs `/compact` automatically. The summary instruction includes a sentence that tells the model to read the memo again.
+- `/compact-memo`: Only makes the model write the memo. It does not run compact. The memo holds decisions, unfinished tasks, the next action, and methods that failed. An existing file is overwritten.
 
 ## notify-on-wait
 
-Claude Code が、あなたの操作を待っていることを知らせます。
+Tells you when Claude Code waits for your action.
 
-- 対象: 許可の確認、モデルからの質問、チームメイトの許可の確認と質問。
-- 音: 同梱の WAV(0.3秒)を1回鳴らします。許可の確認は880Hz、質問は660Hzです。
-- 点滅: プロンプト上の帯と、右側の「入力待ち」ペインが、回答するまで点滅します。
-- 同じ待ちで、音は重ねて鳴らしません。
+- Targets: A permission prompt, a question from the model, and a permission prompt or question from a teammate.
+- Sound: Plays the bundled WAV (0.3 seconds) once. A permission prompt uses 880 Hz. A question uses 660 Hz.
+- Blink: The band above the prompt and the "入力待ち" (waiting for input) pane on the right blink until you answer.
+- The mod does not stack sounds for the same wait.
 
-音の再生は、OS ごとに次のコマンドを使います。
+Sound playback uses this command on each OS.
 
-| OS | コマンド |
+| OS | Command |
 | --- | --- |
 | mac | `afplay` |
-| Linux | `paplay`。失敗したときは `aplay` |
-| WSL | `powershell.exe` の `System.Media.SoundPlayer` |
+| Linux | `paplay`. If it fails, `aplay` |
+| WSL | `System.Media.SoundPlayer` through `powershell.exe` |
 
-制限は、次のとおりです。
+Limitations:
 
-- 動作を確認した環境は、WSL(tmux、VS Code のターミナル)だけです。mac と Linux は、未確認です。
-- ペインは、端末の幅が110桁以上のときだけ開きます。tmux で分割して幅が足りないときは、音だけが鳴ります。
-- 質問のダイアログの表示中は、プロンプト上の帯が隠れます。
-- チームメイトの待ちは、回答を検知できないため、30秒で点滅を止めます。
-- 再生コマンドがない環境では、音は鳴りません。
+- The mod was tested only on WSL (tmux and the VS Code terminal). It is untested on mac and Linux.
+- The pane opens only when the terminal is 110 columns wide or more. When a tmux split is too narrow, only the sound plays.
+- While a question dialog is shown, the band above the prompt is hidden.
+- The mod cannot detect the answer to a teammate's wait. The blink stops after 30 seconds.
+- In an environment without a playback command, no sound plays.
 
-## ライセンス
+## License
 
-[MIT License](./LICENSE) です。
+[MIT License](./LICENSE).
