@@ -13,7 +13,7 @@ const enabledAtom = atom({ plugin: 'usage-status', key: 'enabled' } as const, tr
 const SETTINGS_FILE = '.claude/usage-status.json'
 // デスクトップアプリでは、モード行の下に加えて、ペインにもゲージを出す。
 const PANE = 'usage-status'
-const PANE_TITLE = '使用量'
+const PANE_TITLE = 'ステータス'
 
 const LABELS: Record<string, string> = { five_hour: '5h', seven_day: '7d' }
 const GAUGE_WIDTH = 10
@@ -298,6 +298,7 @@ export const register: Register = on => {
 
     return (
       <Box flexDirection="column">
+        <Text dimColor>使用量</Text>
         {segments.length === 0 && <Text dimColor>使用量はまだありません。</Text>}
         {segments.map((s, i) =>
           'Svg' in ui && s.label !== undefined ? (

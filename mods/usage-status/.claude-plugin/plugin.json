@@ -1,1 +1,1 @@
-{ "name": "usage-status", "version": "0.10.0", "license": "MIT", "description": "5時間・1週間の使用量制限とセッションのトークン使用量を、モード行の下にゲージで常時表示する。80%以上は赤", "types": "./types/index.d.ts" }
+{ "name": "usage-status", "version": "0.10.1", "license": "MIT", "description": "5時間・1週間の使用量制限とセッションのトークン使用量を、モード行の下にゲージで常時表示する。80%以上は赤", "types": "./types/index.d.ts" }
