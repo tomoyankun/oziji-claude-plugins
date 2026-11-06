@@ -34,7 +34,10 @@ plugin-authoring スキルは新しい mod を、このリポジトリの外の 
 claude plugin validate mods/<mod名>   # マニフェストとフックの検証
 claude plugin test mods/<mod名>       # *.test.ts の実行
 claude --plugin-dir mods/<mod名>      # mod を読み込んだ状態でセッション開始
+npx -y -p typescript tsc -p mods/<mod名>   # 型検査(リポジトリに typescript を追加しない)
 ```
+
+`.claude-plugin/types/` は、`claude plugin validate` と `claude -p --plugin-dir` では生成されない。クローン直後は、対話セッションで `claude --plugin-dir mods/<mod名>` を起動し、`/exit` で終了する。生成前に `tsc` を実行すると、`types/tsconfig.json` を読めないエラーと、`claude-code` の型が見つからないエラーが大量に出る。コードの不具合ではない。
 
 ホットリロード: `--plugin-dir` で起動したセッションは、各ターンの終わりに mod の編集を再読み込みする。`claude -p` のように確認を表示できない環境では使えない。その環境では、セッションを再起動して反映する。
 
