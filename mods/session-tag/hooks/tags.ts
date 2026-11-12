@@ -43,7 +43,7 @@ export function dateOf(ms: number): string {
 }
 
 export function cleanTag(text: string): string {
-  return text.replace(/["'`]/g, '').replace(/\s+/g, ' ').trim().slice(0, MAX_TAG)
+  return Array.from(text.replace(/["`]/g, '').replace(/\s+/g, ' ').trim()).slice(0, MAX_TAG).join('')
 }
 
 // Stored ids that have no session file any more.

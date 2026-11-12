@@ -53,3 +53,8 @@ test('staleIds returns stored ids without a file', () => {
 test('dateOf formats local time', () => {
   expect(dateOf(new Date(2026, 0, 2, 3, 4).getTime())).toBe('2026-01-02 03:04')
 })
+
+test('cleanTag keeps apostrophes and does not split a surrogate pair', () => {
+  expect(cleanTag("Don't crash")).toBe("Don't crash")
+  expect(cleanTag('a'.repeat(19) + '😀😀')).toBe('a'.repeat(19) + '😀')
+})

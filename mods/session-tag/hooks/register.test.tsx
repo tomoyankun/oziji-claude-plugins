@@ -132,7 +132,7 @@ const PANE = {
   props: { title: 'Session tags', isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} },
 } as const
 
-function engine(on: any, files: Record<string, { mtimeMs: number; head: string }>, stored: Record<string, unknown> = {}, current = 'current', extra: { elsewhere?: string[]; gate?: Promise<void>; free?: number; calls?: string[] } = {}) {
+function engine(on: any, files: Record<string, { mtimeMs: number; head: string }>, stored: Record<string, unknown> = {}, current = 'current', extra: { elsewhere?: string[]; gate?: Promise<void>; free?: number; calls?: string[]; find?: 'fails' | 'throws' } = {}) {
   const store = new Map<string, unknown>(Object.entries(stored))
   const opened: string[] = []
   on('command.register', () => ({ value: { command: 'session-tag' } }))
@@ -145,9 +145,10 @@ function engine(on: any, files: Record<string, { mtimeMs: number; head: string }
   on('process.run', (_: any, e: any) => {
     const argv: string[] = e.argv
     if (argv[0] === 'find') {
+      if (extra.find === 'throws') throw new Error('find failed')
       const own = Object.keys(files).map(id => `${PROJECT}/${id}.jsonl`)
       const other = (extra.elsewhere ?? []).map(id => `/h/.claude/projects/-q/${id}.jsonl`)
-      return { value: { stdout: [...own, ...other].join('\n'), stderr: '', exitCode: 0 } }
+      return { value: { stdout: [...own, ...other].join('\n'), stderr: '', exitCode: extra.find === 'fails' ? 1 : 0 } }
     }
     if (argv[0] === 'printenv') return { value: { stdout: '/h\n', stderr: '', exitCode: 0 } }
     if (argv[0] === 'pwd') return { value: { stdout: '/p\n', stderr: '', exitCode: 0 } }
@@ -247,4 +248,19 @@ test('opening the pane removes entries whose file is gone', async ($, on) => {
   await $.command.run({ command: 'session-tag' } as any)
   expect(store.has('gone')).toBe(false)
   expect(store.has(id(1))).toBe(true)
+})
+
+test('opening the pane deletes nothing when find fails with partial output', async ($, on) => {
+  const { store } = engine(on, two, { [id(9)]: { tag: 'Keep', done: true } }, 'current', { find: 'fails' })
+  await $.session.start({ cwd: '/p', surface: 'terminal', isInteractive: true })
+  await $.command.run({ command: 'session-tag' } as any)
+  expect(store.has(id(9))).toBe(true)
+})
+
+test('the command still opens the pane when find throws', async ($, on) => {
+  const { opened } = engine(on, two, {}, 'current', { find: 'throws' })
+  await $.session.start({ cwd: '/p', surface: 'terminal', isInteractive: true })
+  const r = await $.command.run({ command: 'session-tag' } as any)
+  expect(r.text).toBe('Session tag list opened.')
+  expect(opened).toEqual(['session-tag'])
 })

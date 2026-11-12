@@ -130,6 +130,8 @@ async function refresh($: any) {
 async function allSessionIds($: any): Promise<string[]> {
   const home = (await $.process.run(['printenv', 'HOME'])).stdout.trim()
   const r = await $.process.run(['find', `${home}/.claude/projects`, '-maxdepth', '2', '-name', '*.jsonl'])
+  // A failed find may print a partial list. Treat it as no answer.
+  if (r.exitCode !== 0) return []
   return r.stdout
     .split('\n')
     .map((p: string) => p.slice(p.lastIndexOf('/') + 1, -'.jsonl'.length))
@@ -162,7 +164,11 @@ export const register: Register = on => {
   })
 
   on('command.run', { command: 'session-tag' }, async $ => {
-    await pruneStale($)
+    try {
+      await pruneStale($)
+    } catch {
+      // Pruning is housekeeping: the pane opens without it.
+    }
     await update($, progress, () => '')
     await refresh($)
     await $.ui.open({ id: PANE, title: 'Session tags', focus: true })
