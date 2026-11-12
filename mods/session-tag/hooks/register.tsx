@@ -1,11 +1,21 @@
+import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import { cleanTag, firstPrompt, pickTargets } from './tags'
+import type { Row } from '../types'
+import { cleanTag, firstPrompt, pickTargets, staleIds } from './tags'
 import type { Entry, SessionFile } from './tags'
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const HEAD_BYTES = '65536'
 const MAX_TAGGED = 20
+const MAX_ROWS = 100
+const PANE = 'session-tag'
+
+const rows = atom({ plugin: 'session-tag', key: 'rows' } as const, [], { shape: 'rows-1' })
+const progress = atom({ plugin: 'session-tag', key: 'progress' } as const, '', { shape: 'progress-1' })
+
+// The label of a session: the first prompt, cut to 40 characters. Kept until the module reloads.
+const labels = new Map<string, string>()
 
 export async function projectDir($: any): Promise<string> {
   const home = (await $.process.run(['printenv', 'HOME'])).stdout.trim()
@@ -63,4 +73,101 @@ export async function tagMissing($: any, onProgress: (done: number, total: numbe
   }
 }
 
-export const register: Register = () => {}
+async function labelOf($: any, project: string, id: string): Promise<string> {
+  const known = labels.get(id)
+  if (known !== undefined) return known
+  const head = (await $.process.run(['head', '-c', HEAD_BYTES, `${project}/${id}.jsonl`])).stdout
+  const label = firstPrompt(head)?.slice(0, 40) ?? '(no prompt)'
+  labels.set(id, label)
+  return label
+}
+
+export async function buildRows($: any): Promise<Row[]> {
+  const project = await projectDir($)
+  const files = (await loadFiles($)).sort((a, b) => b.mtimeMs - a.mtimeMs).slice(0, MAX_ROWS)
+  const entries = await readEntries($)
+  const current = await $.session.id()
+  const list: Row[] = []
+  for (const f of files) {
+    const entry = entries.get(f.id)
+    list.push({
+      id: f.id,
+      date: new Date(f.mtimeMs).toISOString().slice(0, 16).replace('T', ' '),
+      tag: entry?.tag ?? '',
+      done: entry?.done ?? false,
+      current: f.id === current,
+      label: await labelOf($, project, f.id),
+    })
+  }
+  return list
+}
+
+export function textOf(r: Row): string {
+  const mark = r.current ? '(current)' : r.done ? '[done]' : '[    ]'
+  return `${r.date}  ${mark} ${r.tag || '(untagged)'}  ${r.label}`
+}
+
+async function refresh($: any) {
+  const list = await buildRows($)
+  await update($, rows, () => list)
+}
+
+async function pruneStale($: any) {
+  const ids = (await loadFiles($)).map(f => f.id)
+  for (const key of staleIds(await $.store.keys(), ids)) await $.store.delete(key)
+}
+
+async function toggleDone($: any, id: string) {
+  if (id === (await $.session.id())) return
+  const entry = (await $.store.get(id)) as Entry | undefined
+  await $.store.set(id, { tag: entry?.tag ?? '', done: !(entry?.done ?? false) })
+  await refresh($)
+}
+
+export const register: Register = on => {
+  on('session.start', async ($, e, next) => {
+    await $.command.register({
+      name: 'session-tag',
+      description: 'List the sessions of this project with tags. Mark a session done.',
+    })
+    return next(e)
+  })
+
+  on('command.run', { command: 'session-tag' }, async $ => {
+    await pruneStale($)
+    await update($, progress, () => '')
+    await refresh($)
+    await $.ui.open({ id: PANE, title: 'Session tags', focus: true })
+    // Not awaited: the pane shows the list at once and fills the tags in.
+    void tagMissing($, async (done, total) => {
+      await update($, progress, () => (done < total ? `Tagging ${done}/${total}` : ''))
+      await refresh($)
+    }).catch(() => {
+      // Tagging is best effort: a failure leaves the sessions untagged.
+    })
+    return { text: 'Session tag list opened.' }
+  })
+
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+    const { Box, Text, Select } = $.ui.resolve(e)
+    const list = await read($, rows)
+    const note = await read($, progress)
+
+    return (
+      <Box flexDirection="column">
+        {note !== '' && <Text dimColor>{note}</Text>}
+        {list.length === 0 ? (
+          <Text dimColor>No sessions.</Text>
+        ) : (
+          <Select
+            key="session"
+            autoFocus
+            label="Session"
+            options={list.map(r => ({ value: r.id, label: textOf(r) }))}
+            onSelect={(id: string) => toggleDone($, id)}
+          />
+        )}
+      </Box>
+    )
+  })
+}
