@@ -35,6 +35,12 @@ test('pickTargets returns the newest untagged ids up to the limit, excluding the
   expect(ids).not.toContain('s10')
 })
 
+test('pickTargets treats an entry with an empty tag as untagged', () => {
+  const files: SessionFile[] = [{ id: 'a', mtimeMs: 1 }]
+  const entries = new Map<string, Entry>([['a', { tag: '', done: true }]])
+  expect(pickTargets(files, entries, 'x', 20)).toEqual(['a'])
+})
+
 test('cleanTag cuts to 20 characters and removes newlines and quotes', () => {
   expect(cleanTag('"Add\nsession  tag"')).toBe('Add session tag')
   expect(cleanTag('a'.repeat(30))).toBe('a'.repeat(20))

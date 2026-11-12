@@ -21,7 +21,7 @@ export function firstPrompt(head: string): string | undefined {
   return undefined
 }
 
-// The newest ids without a stored entry, at most `limit`. The current session is left out.
+// The newest ids without a stored tag (a done mark alone does not count), at most `limit`. The current session is left out.
 export function pickTargets(
   files: SessionFile[],
   entries: Map<string, Entry>,
@@ -31,7 +31,7 @@ export function pickTargets(
   return [...files]
     .sort((a, b) => b.mtimeMs - a.mtimeMs)
     .map(f => f.id)
-    .filter(id => id !== current && !entries.has(id))
+    .filter(id => id !== current && !entries.get(id)?.tag)
     .slice(0, limit)
 }
 
