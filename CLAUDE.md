@@ -11,9 +11,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ユーザーとのやり取りは、作成を始める前も含めて常に日本語で行う。
 - mod やそのフックモジュールを作成・デバッグするときは `plugin-authoring` スキルを使う。
 - `main` ブランチは保護されていて、直接 push できない。ブランチを切り、`gh pr create` で PR を作成してマージする。承認者は `tomoyankun` だけである(`.github/CODEOWNERS`)。
+- 実装が終わったら、PR を作る前にレビューする。`code-review` スキルで差分を確認し、指摘を直す。レビューと修正は、最大3回繰り返す。指摘がなくなったら、3回に達する前でも終了する。3回目の後に指摘が残るときは、残った指摘を PR の説明に書く。
 - mod のバージョンを上げるときは、次の2つを同じ値にする。手順は「リリース手順」に従う。
   - `plugin.json` の `version`
-  - Git タグ(`v<version>`。マージ後に打つ。リリースの記録)
+  - Git タグ(`<mod名>-v<version>`。マージ後に打つ。リリースの記録。`v<version>` の既存タグは変えない)
 
 ## 構成
 
@@ -47,12 +48,12 @@ npx -y -p typescript tsc -p mods/<mod名>   # 型検査(リポジトリに types
 
 1. ブランチを切る。`mods/<mod名>/.claude-plugin/plugin.json` の `version` を上げる。
 2. PR を作成して、マージする。
-3. マージ後の `main` のコミットに、`v<version>` のタグを打ち、push する。
+3. マージ後の `main` のコミットに、`<mod名>-v<version>` のタグを打ち、push する。mod が違っても同じバージョン番号は使えるため、タグ名に mod 名を含める。
 
    ```bash
    git switch main && git pull
-   git tag -a v0.8.2 -m "usage-status 0.8.2"
-   git push origin v0.8.2
+   git tag -a usage-status-v0.8.2 -m "usage-status 0.8.2"
+   git push origin usage-status-v0.8.2
    ```
 4. 利用者に、README の「更新」の操作(3つの手順)を案内する。
 
