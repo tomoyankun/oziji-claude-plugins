@@ -111,7 +111,7 @@ Tells you when Claude Code waits for your action.
 
 - Targets: A permission prompt, a question from the model, and a permission prompt or question from a teammate.
 - Sound: Plays the bundled WAV (0.3 seconds) once. A permission prompt uses 880 Hz. A question uses 660 Hz.
-- Blink: The band above the prompt and the "入力待ち" (waiting for input) pane on the right blink until you answer.
+- Blink: The band above the prompt and the "Waiting for input" pane on the right blink until you answer.
 - The mod does not stack sounds for the same wait.
 
 Sound playback uses this command on each OS.

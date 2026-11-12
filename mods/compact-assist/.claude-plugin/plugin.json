@@ -1,1 +1,1 @@
-{ "name": "compact-assist", "version": "0.2.0", "license": "MIT", "description": "コンテキスト使用率が70%に達したら、モード行の下に compact の合図を表示する。/compact-memo で、決定事項と未完了タスクをメモファイルに書き出す", "types": "./types/index.d.ts" }
+{ "name": "compact-assist", "version": "0.2.1", "license": "MIT", "description": "Shows a compact cue below the mode line when context usage reaches 70%. /compact-memo writes decisions and open tasks to a memo file.", "types": "./types/index.d.ts" }

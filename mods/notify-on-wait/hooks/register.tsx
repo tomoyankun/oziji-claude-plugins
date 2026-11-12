@@ -43,11 +43,11 @@ async function play($: EngineInterface, kind: Kind): Promise<void> {
         const ran = await $.process.run(argv, { timeoutMs: 5000 })
         if (ran.exitCode === 0) return
       } catch {
-        // このコマンドがない環境では、次の候補を試す。
+        // If the command is missing, try the next candidate.
       }
     }
   } catch {
-    // 判定に失敗した環境では、音を鳴らさない。
+    // If detection fails, play no sound.
   }
 }
 
@@ -61,7 +61,7 @@ function beginWait(
   void play($, kind)
   void update($, label, () => text)
   void update($, isOn, () => true)
-  void $.ui.open({ id: PANE, title: '入力待ち' }).catch(() => undefined)
+  void $.ui.open({ id: PANE, title: 'Waiting for input' }).catch(() => undefined)
   timer = $.clock.every(FLASH_MS, () => {
     void update($, isOn, on => !on)
   })
@@ -84,18 +84,18 @@ export const register: Register = on => {
       const kind = e.message.includes('AskUserQuestion') ? 'question' : 'permission'
       beginWait($, kind, e.message, WORKER_TIMEOUT_MS)
     } else if (e.notification_type === 'permission_prompt') {
-      beginWait($, 'permission', '許可の確認が出ています')
+      beginWait($, 'permission', 'A permission prompt is waiting')
     }
     return next(e)
   }).catch(($, e, next) => next(e))
 
   on('classic.PermissionRequest', ($, e, next) => {
-    beginWait($, 'permission', '許可の確認が出ています')
+    beginWait($, 'permission', 'A permission prompt is waiting')
     return next(e)
   }).catch(($, e, next) => next(e))
 
   on('classic.Elicitation', ($, e, next) => {
-    beginWait($, 'question', 'Claude から質問が出ています')
+    beginWait($, 'question', 'Claude has a question')
     return next(e)
   }).catch(($, e, next) => next(e))
 

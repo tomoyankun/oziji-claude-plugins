@@ -1,1 +1,1 @@
-{ "name": "notify-on-wait", "version": "0.1.0", "license": "MIT", "description": "許可の確認とモデルからの質問が出たとき、音を鳴らし、プロンプト上の帯を回答まで点滅させる", "types": "./types/index.d.ts" }
+{ "name": "notify-on-wait", "version": "0.1.1", "license": "MIT", "description": "Plays a sound and blinks a band above the prompt until answered when a permission prompt or a model question appears.", "types": "./types/index.d.ts" }

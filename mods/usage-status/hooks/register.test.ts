@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { CAUTION_PERCENT, DANGER_PERCENT, barSvg, buildSegments, isHiddenView, isTeammatePane, levelOf, parseToggle } from './register'
+import { CAUTION_PERCENT, DANGER_PERCENT, barSvg, buildSegments, detectTeammate, isHiddenView, isTeammatePane, levelOf, parseToggle } from './register'
 
 test('builds a gauge segment per window and for tokens', () => {
   const segments = buildSegments({ tokens: 45_000, window: 200_000, percent: 23 }, [
@@ -98,4 +98,25 @@ test('draws the bar fill in proportion to the percent', () => {
   expect(barSvg(50, 'ok')).toContain('width="100" height="10" rx="5" fill="#2e9e5b"')
   expect(barSvg(0, 'ok')).not.toContain('#2e9e5b')
   expect(barSvg(150, 'danger')).toContain('width="200" height="10" rx="5" fill="#d64545"')
+})
+
+test('detectTeammate ignores a stale team whose lead process is gone', async () => {
+  const team = (pid: number | undefined) =>
+    JSON.stringify({ leadProcess: pid === undefined ? undefined : { pid }, members: [{ backendType: 'tmux', tmuxPaneId: '%1' }] })
+  const make = (configs: Record<string, string>, alivePids: number[]) =>
+    ({
+      env: { get: async () => '/home' },
+      fs: {
+        list: async () => Object.keys(configs).map(name => ({ name })),
+        read: async (path: string) => configs[path.split("/")[4] as string],
+      },
+      process: {
+        run: async (argv: string[]) => ({ exitCode: alivePids.includes(Number(argv[2])) ? 0 : 1 }),
+      },
+    }) as never
+
+  expect(await detectTeammate(make({ a: team(100) }, [100]), '%1')).toBe(true)
+  expect(await detectTeammate(make({ a: team(100) }, []), '%1')).toBe(false)
+  expect(await detectTeammate(make({ a: team(undefined) }, [100]), '%1')).toBe(false)
+  expect(await detectTeammate(make({ a: team(100) }, [100]), '%9')).toBe(false)
 })

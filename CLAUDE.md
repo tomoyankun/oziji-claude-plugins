@@ -60,4 +60,4 @@ npx -y -p typescript tsc -p mods/<mod名>   # 型検査(リポジトリに types
 
 - `usage-status` — 5時間・1週間の使用量制限とセッションのトークン使用量を、モード行(`PromptHint`)の下にゲージで常時表示する。50%以上は黄、80%以上は赤。デスクトップアプリではペイン(`/usage-status pane` / `pane off`)にも出す。`/usage-status` で表示をオン・オフする。`types/index.d.ts` に型契約がある。
 - `compact-assist` — コンテキスト使用率が70%以上で、赤の合図とボタンを、モード行(`PromptHint`)の下に出す。ボタンは、モデルにメモを `~/.claude/compact-memo.md` へ書かせ、`turn.complete` で `$.session.compact` を実行する。`/compact-memo` はメモを書かせるだけである。`types/index.d.ts` に型契約がある。
-- `notify-on-wait` — 許可の確認とモデルからの質問(チームメイトの分を含む)が出たとき、同梱の WAV(0.3秒)を鳴らし、プロンプト上の帯と「入力待ち」ペインを回答まで点滅させる。音は WSL(`powershell.exe`)、mac(`afplay`)、Linux(`paplay` または `aplay`)で再生する。検知には `classic.Notification`(`worker_permission_prompt`、`permission_prompt`)、`classic.PermissionRequest`、`classic.Elicitation` を使う。`types/index.d.ts` に型契約がある。
+- `notify-on-wait` — 許可の確認とモデルからの質問(チームメイトの分を含む)が出たとき、同梱の WAV(0.3秒)を鳴らし、プロンプト上の帯と「Waiting for input」ペインを回答まで点滅させる。音は WSL(`powershell.exe`)、mac(`afplay`)、Linux(`paplay` または `aplay`)で再生する。検知には `classic.Notification`(`worker_permission_prompt`、`permission_prompt`)、`classic.PermissionRequest`、`classic.Elicitation` を使う。`types/index.d.ts` に型契約がある。
