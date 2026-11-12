@@ -2,6 +2,8 @@ import { expect, test } from 'claude-code/testing'
 
 import { tagMissing } from './register'
 
+declare const setTimeout: (f: (...a: any[]) => void, ms: number) => unknown
+
 const PROJECT = '/h/.claude/projects/-p'
 const prompt = (text: string) => JSON.stringify({ type: 'user', message: { content: text } })
 
@@ -25,7 +27,7 @@ function fake(
       run: async (argv: string[]) => {
         if (argv[0] === 'printenv') return { stdout: '/h\n' }
         if (argv[0] === 'pwd') return { stdout: '/p\n' }
-        const id = argv[argv.length - 1].replace(`${PROJECT}/`, '').replace('.jsonl', '')
+        const id = argv[argv.length - 1]!.replace(`${PROJECT}/`, '').replace('.jsonl', '')
         return { stdout: files[id]?.head ?? '' }
       },
     },
@@ -119,7 +121,7 @@ function engine(on: any, files: Record<string, { mtimeMs: number; head: string }
     const argv: string[] = e.argv
     if (argv[0] === 'printenv') return { value: { stdout: '/h\n', stderr: '', exitCode: 0 } }
     if (argv[0] === 'pwd') return { value: { stdout: '/p\n', stderr: '', exitCode: 0 } }
-    const id = argv[argv.length - 1].replace(`${PROJECT}/`, '').replace('.jsonl', '')
+    const id = argv[argv.length - 1]!.replace(`${PROJECT}/`, '').replace('.jsonl', '')
     return { value: { stdout: files[id]?.head ?? '', stderr: '', exitCode: 0 } }
   })
   on('store.keys', () => ({ value: [...store.keys()] }))
@@ -138,7 +140,7 @@ const two = {
 test('the command opens the pane and lists sessions at once', async ($, on) => {
   const { opened } = engine(on, two)
   await $.session.start({ cwd: '/p', surface: 'terminal', isInteractive: true })
-  const r = await $.command.run({ command: 'session-tag' })
+  const r = await $.command.run({ command: 'session-tag' } as any)
   expect(r.text).toBe('Session tag list opened.')
   expect(opened).toEqual(['session-tag'])
   const ui = await $.ui.mount(PANE)
@@ -149,7 +151,7 @@ test('the command opens the pane and lists sessions at once', async ($, on) => {
 test('the pane shows Tagging n/m while tags are generated', async ($, on) => {
   engine(on, two)
   await $.session.start({ cwd: '/p', surface: 'terminal', isInteractive: true })
-  await $.command.run({ command: 'session-tag' })
+  await $.command.run({ command: 'session-tag' } as any)
   await new Promise(r => setTimeout(r, 20))
   const ui = await $.ui.mount(PANE)
   const select = await ui.find({ type: 'Select', key: 'session' })
@@ -160,7 +162,7 @@ test('the pane shows Tagging n/m while tags are generated', async ($, on) => {
 test('selecting a session toggles its done flag', async ($, on) => {
   const { store } = engine(on, two, { [id(1)]: { tag: 'Old', done: false } })
   await $.session.start({ cwd: '/p', surface: 'terminal', isInteractive: true })
-  await $.command.run({ command: 'session-tag' })
+  await $.command.run({ command: 'session-tag' } as any)
   const ui = await $.ui.mount(PANE)
   await ui.select({ key: 'session', value: id(1) })
   expect(store.get(id(1))).toEqual({ tag: 'Old', done: true })
@@ -173,7 +175,7 @@ test('selecting the current session changes nothing', async ($, on) => {
   const now = 'cccccccc-cccc-cccc-cccc-cccccccccccc'
   const { store } = engine(on, { ...two, [now]: { mtimeMs: 3, head: prompt('now') } }, {}, now)
   await $.session.start({ cwd: '/p', surface: 'terminal', isInteractive: true })
-  await $.command.run({ command: 'session-tag' })
+  await $.command.run({ command: 'session-tag' } as any)
   const ui = await $.ui.mount(PANE)
   await ui.select({ key: 'session', value: now })
   expect(store.has(now)).toBe(false)
@@ -183,7 +185,7 @@ test('selecting the current session changes nothing', async ($, on) => {
 test('opening the pane removes entries whose file is gone', async ($, on) => {
   const { store } = engine(on, two, { gone: { tag: 'x', done: true }, [id(1)]: { tag: 'Old', done: false } })
   await $.session.start({ cwd: '/p', surface: 'terminal', isInteractive: true })
-  await $.command.run({ command: 'session-tag' })
+  await $.command.run({ command: 'session-tag' } as any)
   expect(store.has('gone')).toBe(false)
   expect(store.has(id(1))).toBe(true)
 })

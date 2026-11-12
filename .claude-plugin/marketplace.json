@@ -27,6 +27,11 @@
       "name": "session-rm",
       "source": "./mods/session-rm",
       "description": "Lists the sessions of this project in a pane. Deletes the one you pick, with its related data."
+    },
+    {
+      "name": "session-tag",
+      "source": "./mods/session-tag",
+      "description": "Tags the sessions of this project in a pane. Claude writes a content tag. You mark a session done."
     }
   ]
 }

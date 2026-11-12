@@ -14,6 +14,7 @@ This repository is a Claude Code marketplace. Install a mod with `/plugin instal
 | [`compact-assist`](./mods/compact-assist/README.md) | Shows a cue and a button when context usage reaches 70%. The button writes a memo, then runs compact. |
 | [`notify-on-wait`](./mods/notify-on-wait/README.md) | Plays a 0.3-second sound when a permission prompt or a question from the model appears. Blinks the band above the prompt and a pane until you answer. |
 | [`session-rm`](./mods/session-rm/README.md) | Lists the sessions of the current project in a pane (`/session-rm`). Deletes the one you pick, with its related data. |
+| [`session-tag`](./mods/session-tag/README.md) | Tags the sessions of the current project in a pane (`/session-tag`). Claude writes a content tag. You mark a session done. |
 
 ## Install
 
