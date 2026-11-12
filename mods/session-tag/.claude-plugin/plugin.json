@@ -1,0 +1,1 @@
+{ "name": "session-tag", "version": "0.1.0", "license": "MIT", "description": "Tags the sessions of this project. Claude tags the content. You mark a session done. /session-tag opens the pane.", "types": "./types/index.d.ts" }
