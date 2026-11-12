@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { cleanTag, firstPrompt, pickTargets, staleIds } from './tags'
+import { cleanTag, dateOf, firstPrompt, pickTargets, staleIds } from './tags'
 import type { Entry, SessionFile } from './tags'
 
 const user = (text: string) => JSON.stringify({ type: 'user', message: { content: text } })
@@ -48,4 +48,8 @@ test('cleanTag cuts to 20 characters and removes newlines and quotes', () => {
 
 test('staleIds returns stored ids without a file', () => {
   expect(staleIds(['a', 'b', 'c'], ['a', 'c'])).toEqual(['b'])
+})
+
+test('dateOf formats local time', () => {
+  expect(dateOf(new Date(2026, 0, 2, 3, 4).getTime())).toBe('2026-01-02 03:04')
 })

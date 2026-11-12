@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { tagMissing } from './register'
+import { buildRows, tagMissing } from './register'
 
 declare const setTimeout: (f: (...a: any[]) => void, ms: number) => unknown
 
@@ -74,7 +74,7 @@ test('tagMissing does not call the model for a session without a prompt', async 
   const { $, store, calls } = fake({ [id(1)]: { mtimeMs: 1, head: JSON.stringify({ type: 'assistant' }) } }, () => ok('Tag'))
   await tagMissing($, () => {})
   expect(calls).toHaveLength(0)
-  expect(store.has(id(1))).toBe(false)
+  expect(store.get(id(1))).toEqual({ tag: '(no prompt)', done: false })
 })
 
 test('tagMissing keeps an existing done flag', async () => {
@@ -92,9 +92,34 @@ test('tagMissing processes at most 20 sessions', async () => {
   for (let i = 1; i <= 25; i++) files[id(i)] = { mtimeMs: i, head: prompt(`task ${i}`) }
   const { $, calls } = fake(files, () => ok('Tag'))
   const seen: [number, number][] = []
-  await tagMissing($, (done, total) => seen.push([done, total]))
+  await tagMissing($, (done, total) => void seen.push([done, total]))
   expect(calls).toHaveLength(20)
   expect(seen[seen.length - 1]).toEqual([20, 20])
+})
+
+test('tagMissing keeps going when the progress callback throws', async () => {
+  const { $, store } = fake(
+    { [id(1)]: { mtimeMs: 1, head: prompt('a') }, [id(2)]: { mtimeMs: 2, head: prompt('b') } },
+    () => ok('Tag'),
+  )
+  await tagMissing($, async () => {
+    throw new Error('draw failed')
+  })
+  expect(store.has(id(1))).toBe(true)
+  expect(store.has(id(2))).toBe(true)
+})
+
+test('buildRows labels a session whose file cannot be read', async () => {
+  const { $ } = fake({ [id(1)]: { mtimeMs: 1, head: prompt('a') }, [id(2)]: { mtimeMs: 2, head: prompt('b') } }, () => ok('Tag'))
+  const run = $.process.run
+  $.process.run = async (argv: string[]) => {
+    if (argv[0] === 'head' && argv[argv.length - 1]!.includes(id(1))) throw new Error('gone')
+    return run(argv)
+  }
+  const rows = await buildRows($)
+  expect(rows).toHaveLength(2)
+  expect(rows.find(r => r.id === id(1))?.label).toBe('(unreadable)')
+  expect(rows.find(r => r.id === id(2))?.label).toBe('b')
 })
 
 // ---- the command and the pane, through the engine's own events ----
@@ -107,7 +132,7 @@ const PANE = {
   props: { title: 'Session tags', isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} },
 } as const
 
-function engine(on: any, files: Record<string, { mtimeMs: number; head: string }>, stored: Record<string, unknown> = {}, current = 'current') {
+function engine(on: any, files: Record<string, { mtimeMs: number; head: string }>, stored: Record<string, unknown> = {}, current = 'current', extra: { elsewhere?: string[]; gate?: Promise<void>; free?: number; calls?: string[] } = {}) {
   const store = new Map<string, unknown>(Object.entries(stored))
   const opened: string[] = []
   on('command.register', () => ({ value: { command: 'session-tag' } }))
@@ -119,6 +144,11 @@ function engine(on: any, files: Record<string, { mtimeMs: number; head: string }
   }))
   on('process.run', (_: any, e: any) => {
     const argv: string[] = e.argv
+    if (argv[0] === 'find') {
+      const own = Object.keys(files).map(id => `${PROJECT}/${id}.jsonl`)
+      const other = (extra.elsewhere ?? []).map(id => `/h/.claude/projects/-q/${id}.jsonl`)
+      return { value: { stdout: [...own, ...other].join('\n'), stderr: '', exitCode: 0 } }
+    }
     if (argv[0] === 'printenv') return { value: { stdout: '/h\n', stderr: '', exitCode: 0 } }
     if (argv[0] === 'pwd') return { value: { stdout: '/p\n', stderr: '', exitCode: 0 } }
     const id = argv[argv.length - 1]!.replace(`${PROJECT}/`, '').replace('.jsonl', '')
@@ -128,7 +158,13 @@ function engine(on: any, files: Record<string, { mtimeMs: number; head: string }
   on('store.get', (_: any, e: any) => ({ value: store.get(e.key) }))
   on('store.set', (_: any, e: any) => (store.set(e.key, e.value), { value: undefined }))
   on('store.delete', (_: any, e: any) => (store.delete(e.key), { value: undefined }))
-  on('model.complete', () => ({ value: { isAnswered: true, text: 'Tag' } }))
+  let n = 0
+  on('model.complete', async () => {
+    extra.calls?.push('call')
+    n += 1
+    if (extra.gate && n > (extra.free ?? 1)) await extra.gate
+    return { value: { isAnswered: true, text: 'Tag' } }
+  })
   return { store, opened }
 }
 
@@ -149,14 +185,37 @@ test('the command opens the pane and lists sessions at once', async ($, on) => {
 })
 
 test('the pane shows Tagging n/m while tags are generated', async ($, on) => {
-  engine(on, two)
+  let release = () => {}
+  const gate = new Promise<void>(r => (release = r))
+  engine(on, two, {}, 'current', { gate })
   await $.session.start({ cwd: '/p', surface: 'terminal', isInteractive: true })
   await $.command.run({ command: 'session-tag' } as any)
   await new Promise(r => setTimeout(r, 20))
   const ui = await $.ui.mount(PANE)
-  const select = await ui.find({ type: 'Select', key: 'session' })
-  expect(JSON.stringify(select)).toContain('Tag')
+  expect((await ui.find({ type: 'Text', text: /Tagging 1\/2/ }))?.text).toBe('Tagging 1/2')
+  release()
   await ui.unmount()
+})
+
+test('a second command run while tagging does not start a second pass', async ($, on) => {
+  let release = () => {}
+  const gate = new Promise<void>(r => (release = r))
+  const calls: string[] = []
+  engine(on, two, {}, 'current', { gate, calls, free: 0 })
+  await $.session.start({ cwd: '/p', surface: 'terminal', isInteractive: true })
+  await $.command.run({ command: 'session-tag' } as any)
+  await $.command.run({ command: 'session-tag' } as any)
+  await new Promise(r => setTimeout(r, 20))
+  expect(calls).toHaveLength(1)
+  release()
+})
+
+test('opening the pane keeps the entries of sessions in other projects', async ($, on) => {
+  const { store } = engine(on, two, { [id(9)]: { tag: 'Keep', done: true }, gone: { tag: 'x', done: false } }, 'current', { elsewhere: [id(9)] })
+  await $.session.start({ cwd: '/p', surface: 'terminal', isInteractive: true })
+  await $.command.run({ command: 'session-tag' } as any)
+  expect(store.has(id(9))).toBe(true)
+  expect(store.has('gone')).toBe(false)
 })
 
 test('selecting a session toggles its done flag', async ($, on) => {

@@ -35,6 +35,13 @@ export function pickTargets(
     .slice(0, limit)
 }
 
+// A timestamp as local time: YYYY-MM-DD HH:MM.
+export function dateOf(ms: number): string {
+  const d = new Date(ms)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
 export function cleanTag(text: string): string {
   return text.replace(/["'`]/g, '').replace(/\s+/g, ' ').trim().slice(0, MAX_TAG)
 }

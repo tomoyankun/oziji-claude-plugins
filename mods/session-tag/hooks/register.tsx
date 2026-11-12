@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Row } from '../types'
-import { cleanTag, firstPrompt, pickTargets, staleIds } from './tags'
+import { cleanTag, dateOf, firstPrompt, pickTargets, staleIds } from './tags'
 import type { Entry, SessionFile } from './tags'
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
@@ -10,6 +10,7 @@ const HEAD_BYTES = '65536'
 const MAX_TAGGED = 20
 const MAX_ROWS = 100
 const PANE = 'session-tag'
+const NO_PROMPT = '(no prompt)'
 
 const rows = atom({ plugin: 'session-tag', key: 'rows' } as const, [], { shape: 'rows-1' })
 const progress = atom({ plugin: 'session-tag', key: 'progress' } as const, '', { shape: 'progress-1' })
@@ -49,8 +50,12 @@ async function generateTag($: any, text: string): Promise<string | undefined> {
   return cleanTag(r.text ?? '') || undefined
 }
 
-// Tags the newest untagged sessions, one at a time. A failed session stays untagged.
-export async function tagMissing($: any, onProgress: (done: number, total: number) => void): Promise<void> {
+// Tags the newest untagged sessions, one at a time. A failed model call leaves the session
+// untagged. A session without a typed prompt gets the NO_PROMPT tag and is not tried again.
+export async function tagMissing(
+  $: any,
+  onProgress: (done: number, total: number) => void | Promise<void>,
+): Promise<void> {
   const project = await projectDir($)
   const files = await loadFiles($)
   const entries = await readEntries($)
@@ -60,7 +65,7 @@ export async function tagMissing($: any, onProgress: (done: number, total: numbe
     try {
       const head = (await $.process.run(['head', '-c', HEAD_BYTES, `${project}/${id}.jsonl`])).stdout
       const text = firstPrompt(head)
-      const tag = text === undefined ? undefined : await generateTag($, text)
+      const tag = text === undefined ? NO_PROMPT : await generateTag($, text)
       if (tag !== undefined) {
         const current = (await $.store.get(id)) as Entry | undefined
         await $.store.set(id, { tag, done: current?.done ?? false })
@@ -69,17 +74,26 @@ export async function tagMissing($: any, onProgress: (done: number, total: numbe
       // One failed session must not stop the others.
     }
     done += 1
-    onProgress(done, targets.length)
+    try {
+      await onProgress(done, targets.length)
+    } catch {
+      // A failed redraw must not stop the tagging.
+    }
   }
 }
 
 async function labelOf($: any, project: string, id: string): Promise<string> {
   const known = labels.get(id)
   if (known !== undefined) return known
-  const head = (await $.process.run(['head', '-c', HEAD_BYTES, `${project}/${id}.jsonl`])).stdout
-  const label = firstPrompt(head)?.slice(0, 40) ?? '(no prompt)'
-  labels.set(id, label)
-  return label
+  try {
+    const head = (await $.process.run(['head', '-c', HEAD_BYTES, `${project}/${id}.jsonl`])).stdout
+    const label = firstPrompt(head)?.slice(0, 40) ?? NO_PROMPT
+    labels.set(id, label)
+    return label
+  } catch {
+    // Not cached: the next refresh reads the file again.
+    return '(unreadable)'
+  }
 }
 
 export async function buildRows($: any): Promise<Row[]> {
@@ -92,7 +106,7 @@ export async function buildRows($: any): Promise<Row[]> {
     const entry = entries.get(f.id)
     list.push({
       id: f.id,
-      date: new Date(f.mtimeMs).toISOString().slice(0, 16).replace('T', ' '),
+      date: dateOf(f.mtimeMs),
       tag: entry?.tag ?? '',
       done: entry?.done ?? false,
       current: f.id === current,
@@ -112,8 +126,20 @@ async function refresh($: any) {
   await update($, rows, () => list)
 }
 
+// The ids of the session files in every project. The store is shared by all projects.
+async function allSessionIds($: any): Promise<string[]> {
+  const home = (await $.process.run(['printenv', 'HOME'])).stdout.trim()
+  const r = await $.process.run(['find', `${home}/.claude/projects`, '-maxdepth', '2', '-name', '*.jsonl'])
+  return r.stdout
+    .split('\n')
+    .map((p: string) => p.slice(p.lastIndexOf('/') + 1, -'.jsonl'.length))
+    .filter((id: string) => UUID.test(id))
+}
+
 async function pruneStale($: any) {
-  const ids = (await loadFiles($)).map(f => f.id)
+  const ids = await allSessionIds($)
+  // An empty answer means the listing failed. Delete nothing then.
+  if (ids.length === 0) return
   for (const key of staleIds(await $.store.keys(), ids)) await $.store.delete(key)
 }
 
@@ -123,6 +149,8 @@ async function toggleDone($: any, id: string) {
   await $.store.set(id, { tag: entry?.tag ?? '', done: !(entry?.done ?? false) })
   await refresh($)
 }
+
+let isTagging = false
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
@@ -139,12 +167,19 @@ export const register: Register = on => {
     await refresh($)
     await $.ui.open({ id: PANE, title: 'Session tags', focus: true })
     // Not awaited: the pane shows the list at once and fills the tags in.
-    void tagMissing($, async (done, total) => {
-      await update($, progress, () => (done < total ? `Tagging ${done}/${total}` : ''))
-      await refresh($)
-    }).catch(() => {
-      // Tagging is best effort: a failure leaves the sessions untagged.
-    })
+    if (!isTagging) {
+      isTagging = true
+      void tagMissing($, async (done, total) => {
+        await update($, progress, () => (done < total ? `Tagging ${done}/${total}` : ''))
+        await refresh($)
+      })
+        .catch(() => {
+          // Tagging is best effort: a failure leaves the sessions untagged.
+        })
+        .finally(() => {
+          isTagging = false
+        })
+    }
     return { text: 'Session tag list opened.' }
   })
 
