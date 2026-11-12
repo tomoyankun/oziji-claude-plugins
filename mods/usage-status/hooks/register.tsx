@@ -44,11 +44,32 @@ type ViewProps = { hasSurvey?: boolean; view?: { agentId?: string } }
 export const isHiddenView = (props: ViewProps): boolean =>
   props.hasSurvey === true || props.view?.agentId !== undefined
 
-type TeamConfig = { members?: { backendType?: string; tmuxPaneId?: string }[] }
+type TeamConfig = {
+  leadProcess?: { pid?: number }
+  members?: { backendType?: string; tmuxPaneId?: string }[]
+}
 
 export const isTeammatePane = (configs: TeamConfig[], pane: string | undefined): boolean =>
   pane !== undefined &&
   configs.some(c => c.members?.some(m => m.backendType === 'tmux' && m.tmuxPaneId === pane))
+
+// tmuxのペインIDは再利用される。リードのプロセスが終わったチームの設定は、判定に使わない。
+// leadProcess.pid が無い設定は、終わったチームとして扱う。
+const isLeadAlive = async ($: EngineInterface, config: TeamConfig): Promise<boolean> => {
+  const pid = config.leadProcess?.pid
+
+  if (typeof pid !== 'number') {
+    return false
+  }
+
+  try {
+    const result = await $.process.run(['kill', '-0', String(pid)])
+
+    return result.exitCode === 0
+  } catch {
+    return false
+  }
+}
 
 const readTeamConfigs = async ($: EngineInterface): Promise<TeamConfig[]> => {
   const home = await $.env.get('HOME')
@@ -161,16 +182,29 @@ export const buildSegments = (
   return [...limits, tokens]
 }
 
+export const detectTeammate = async ($: EngineInterface, pane: string | undefined): Promise<boolean> => {
+  try {
+    const configs = await readTeamConfigs($)
+    // 自分のペインを含むチームだけ、リードの生死を確認する。
+    const candidates = configs.filter(c => isTeammatePane([c], pane))
+    const alive = await Promise.all(candidates.map(c => isLeadAlive($, c)))
+
+    return alive.some(Boolean)
+  } catch {
+    return false
+  }
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'usage-status',
-      description: '使用量ゲージの表示をオン・オフする(引数: on / off / pane / pane off。省略すると反転)',
+      description: 'Turns the usage gauges on or off (args: on / off / pane / pane off; no args toggles)',
     })
     const settings = await readSettings($)
     const enabledFromFile = settings.enabled
     const pane = await $.env.get('TMUX_PANE')
-    const detected = await readTeamConfigs($).then(c => isTeammatePane(c, pane)).catch(() => false)
+    const detected = await detectTeammate($, pane)
     await update($, teammateAtom, () => detected)
     await update($, enabledAtom, () => enabledFromFile)
     const usage = await $.session.usage()
@@ -203,7 +237,7 @@ export const register: Register = on => {
         await $.ui.close({ id: PANE })
         await writeSettings($, { pane: false }).catch(() => undefined)
 
-        return { text: '使用量ペインを閉じました。次回から開きません。デスクトップアプリでも開きません。' }
+        return { text: 'Closed the usage pane. It will not open from the next session on, including in the desktop app.' }
       }
 
       const opened = await $.ui.open({ id: PANE, title: PANE_TITLE })
@@ -211,8 +245,8 @@ export const register: Register = on => {
 
       return {
         text: opened.isPlaced
-          ? '使用量ペインを開きました。次回から常に開きます。'
-          : '使用量ペインを登録しました。表示できる幅になると開きます。',
+          ? 'Opened the usage pane. It will always open from the next session on.'
+          : 'Registered the usage pane. It opens when the window is wide enough.',
       }
     }
 
@@ -220,13 +254,13 @@ export const register: Register = on => {
     const next = parseToggle(e.args, current)
 
     if (next === undefined) {
-      return { text: `引数は on、off、pane、pane off のどれかを指定してください。現在: ${current ? 'on' : 'off'}` }
+      return { text: `Use one of these arguments: on, off, pane, pane off. Current: ${current ? 'on' : 'off'}` }
     }
 
     await update($, enabledAtom, () => next)
     await writeSettings($, { enabled: next }).catch(() => undefined)
 
-    return { text: `使用量ゲージを ${next ? 'on' : 'off'} にしました。` }
+    return { text: `Turned the usage gauges ${next ? 'on' : 'off'}.` }
   })
 
   on('session.measure', async ($, e, next) => {

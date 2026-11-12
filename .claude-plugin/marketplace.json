@@ -2,24 +2,24 @@
   "name": "oziji-claude-plugins",
   "owner": { "name": "tomoyankun" },
   "metadata": {
-    "description": "Claude Code の mod / プラグイン集。使用量ゲージを表示する usage-status を配布する",
+    "description": "Claude Code mods and plugins. Includes usage-status, which shows usage gauges.",
     "version": "0.1.0"
   },
   "plugins": [
     {
       "name": "usage-status",
       "source": "./mods/usage-status",
-      "description": "5時間・1週間の使用量制限とセッションのトークン使用量を、モード行の下にゲージで常時表示する。80%以上は赤"
+      "description": "Always shows the 5-hour and 1-week usage limits and the session token usage as gauges below the mode line. A gauge turns red at 80%."
     },
     {
       "name": "compact-assist",
       "source": "./mods/compact-assist",
-      "description": "コンテキスト使用率が70%に達したら、モード行の下に compact の合図を表示する。/compact-memo でメモを書き出す"
+      "description": "Shows a compact cue below the mode line when context usage reaches 70%. /compact-memo writes a memo."
     },
     {
       "name": "notify-on-wait",
       "source": "./mods/notify-on-wait",
-      "description": "許可の確認とモデルからの質問が出たとき、0.3秒の音を鳴らし、回答まで帯とペインを点滅させる"
+      "description": "Plays a 0.3-second sound and blinks a band and a pane until answered when a permission prompt or a model question appears."
     }
   ]
 }
