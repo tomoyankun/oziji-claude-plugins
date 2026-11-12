@@ -74,7 +74,7 @@ test('tagMissing does not call the model for a session without a prompt', async 
   const { $, store, calls } = fake({ [id(1)]: { mtimeMs: 1, head: JSON.stringify({ type: 'assistant' }) } }, () => ok('Tag'))
   await tagMissing($, () => {})
   expect(calls).toHaveLength(0)
-  expect(store.get(id(1))).toEqual({ tag: '(no prompt)', done: false })
+  expect(store.has(id(1))).toBe(false)
 })
 
 test('tagMissing keeps an existing done flag', async () => {
@@ -95,6 +95,27 @@ test('tagMissing processes at most 20 sessions', async () => {
   await tagMissing($, (done, total) => void seen.push([done, total]))
   expect(calls).toHaveLength(20)
   expect(seen[seen.length - 1]).toEqual([20, 20])
+})
+
+test('tagMissing does not count a session without a prompt in the 20 model calls', async () => {
+  const files: Record<string, { mtimeMs: number; head: string }> = {}
+  for (let i = 1; i <= 25; i++) {
+    files[id(i)] = { mtimeMs: i, head: i > 20 ? JSON.stringify({ type: 'assistant' }) : prompt(`task ${i}`) }
+  }
+  const { $, calls } = fake(files, () => ok('Tag'))
+  await tagMissing($, () => {})
+  expect(calls).toHaveLength(20)
+})
+
+test('tagMissing tries a session without a prompt again on the next run', async () => {
+  const files = { [id(1)]: { mtimeMs: 1, head: '' } }
+  const { $, calls, store } = fake(files, () => ok('Tag'))
+  await tagMissing($, () => {})
+  expect(store.has(id(1))).toBe(false)
+  files[id(1)]!.head = prompt('now typed')
+  await tagMissing($, () => {})
+  expect(calls).toHaveLength(1)
+  expect(store.get(id(1))).toEqual({ tag: 'Tag', done: false })
 })
 
 test('tagMissing keeps going when the progress callback throws', async () => {

@@ -50,8 +50,9 @@ async function generateTag($: any, text: string): Promise<string | undefined> {
   return cleanTag(r.text ?? '') || undefined
 }
 
-// Tags the newest untagged sessions, one at a time. A failed model call leaves the session
-// untagged. A session without a typed prompt gets the NO_PROMPT tag and is not tried again.
+// Tags the newest untagged sessions, one at a time, with at most MAX_TAGGED model calls.
+// A session without a typed prompt is skipped without a call and is looked at again next time.
+// A failed model call leaves the session untagged.
 export async function tagMissing(
   $: any,
   onProgress: (done: number, total: number) => void | Promise<void>,
@@ -59,13 +60,17 @@ export async function tagMissing(
   const project = await projectDir($)
   const files = await loadFiles($)
   const entries = await readEntries($)
-  const targets = pickTargets(files, entries, await $.session.id(), MAX_TAGGED)
+  const candidates = pickTargets(files, entries, await $.session.id(), Infinity)
+  const total = Math.min(candidates.length, MAX_TAGGED)
   let done = 0
-  for (const id of targets) {
+  for (const id of candidates) {
+    if (done >= MAX_TAGGED) break
     try {
       const head = (await $.process.run(['head', '-c', HEAD_BYTES, `${project}/${id}.jsonl`])).stdout
       const text = firstPrompt(head)
-      const tag = text === undefined ? NO_PROMPT : await generateTag($, text)
+      if (text === undefined) continue
+      done += 1
+      const tag = await generateTag($, text)
       if (tag !== undefined) {
         const current = (await $.store.get(id)) as Entry | undefined
         await $.store.set(id, { tag, done: current?.done ?? false })
@@ -73,12 +78,16 @@ export async function tagMissing(
     } catch {
       // One failed session must not stop the others.
     }
-    done += 1
     try {
-      await onProgress(done, targets.length)
+      await onProgress(done, total)
     } catch {
       // A failed redraw must not stop the tagging.
     }
+  }
+  try {
+    await onProgress(done, done)
+  } catch {
+    // Same as above.
   }
 }
 
@@ -87,7 +96,9 @@ async function labelOf($: any, project: string, id: string): Promise<string> {
   if (known !== undefined) return known
   try {
     const head = (await $.process.run(['head', '-c', HEAD_BYTES, `${project}/${id}.jsonl`])).stdout
-    const label = firstPrompt(head)?.slice(0, 40) ?? NO_PROMPT
+    const label = firstPrompt(head)?.slice(0, 40)
+    // A session without a prompt yet may get one later: do not cache it.
+    if (label === undefined) return NO_PROMPT
     labels.set(id, label)
     return label
   } catch {
