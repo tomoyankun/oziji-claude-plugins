@@ -1,6 +1,8 @@
 {
   "name": "oziji-claude-plugins",
-  "owner": { "name": "tomoyankun" },
+  "owner": {
+    "name": "tomoyankun"
+  },
   "metadata": {
     "description": "Claude Code mods and plugins. Includes usage-status, which shows usage gauges.",
     "version": "0.1.0"
@@ -20,6 +22,11 @@
       "name": "notify-on-wait",
       "source": "./mods/notify-on-wait",
       "description": "Plays a 0.3-second sound and blinks a band and a pane until answered when a permission prompt or a model question appears."
+    },
+    {
+      "name": "session-rm",
+      "source": "./mods/session-rm",
+      "description": "Lists the sessions of this project in a pane. Deletes the one you pick, with its related data."
     }
   ]
 }
