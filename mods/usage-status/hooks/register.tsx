@@ -269,6 +269,19 @@ export const register: Register = on => {
     return next(e)
   })
 
+  // session.measure は compact の後には発火しない。compact の後に使用量を読み直す。
+  on('session.compact', async ($, e, next) => {
+    const result = await next(e)
+
+    $.clock.after(500, async () => {
+      const usage = await $.session.usage()
+
+      await update($, segmentsAtom, () => buildSegments(usage.context, usage.rateLimits))
+    })
+
+    return result
+  })
+
   // モード行(PromptHint)の下にゲージを足す。engineの行は next(e) でそのまま残す。
   on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
     const stored = await read($, segmentsAtom)

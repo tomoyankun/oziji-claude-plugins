@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { Register } from 'claude-code'
+import type { EngineInterface, Register } from 'claude-code'
 
 const percentAtom = atom({ plugin: 'compact-assist', key: 'percent' } as const, 0)
 // A flag: run compact after the button's memo turn ends.
@@ -29,6 +29,12 @@ Approaches that were tried and failed, and why they failed.
 
 Do not write what the code or the git history already shows. When done, report only the file path.`
 
+const refreshPercent = async ($: EngineInterface): Promise<void> => {
+  const usage = await $.session.usage()
+
+  await update($, percentAtom, () => usage.context.percent ?? 0)
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
@@ -45,6 +51,15 @@ export const register: Register = on => {
     await update($, percentAtom, () => e.context.percent ?? 0)
 
     return next(e)
+  })
+
+  // session.measure does not fire after a compaction. Read the usage again after it.
+  on('session.compact', async ($, e, next) => {
+    const result = await next(e)
+
+    $.clock.after(500, () => refreshPercent($))
+
+    return result
   })
 
   on('command.run', { command: 'compact-memo' }, async $ => {
@@ -85,6 +100,7 @@ export const register: Register = on => {
     $.clock.after(500, () =>
       $.session
         .compact({ instructions: COMPACT_INSTRUCTIONS(path) })
+        .then(() => refreshPercent($))
         .then(() => $.ui.toast('compact-memo: compact finished'))
         .catch(error => $.ui.toast(`compact-memo: compact failed: ${String(error)}`)),
     )
