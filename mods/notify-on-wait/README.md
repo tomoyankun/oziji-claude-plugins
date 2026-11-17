@@ -29,15 +29,15 @@ See the [root README](../../README.md#install) for the scope options, team shari
 
 The mod runs these commands. It runs no other command.
 
-1. `uname -sr` detects the OS.
+1. `uname -sr` detects the OS. The mod treats the OS as WSL when the output contains `microsoft`. The mod checks WSL before Linux.
 2. On WSL, `wslpath -w <WAV path>` converts the WAV path to a Windows path.
 3. On WSL, `powershell.exe -NoProfile -Command "(New-Object System.Media.SoundPlayer '<Windows path>').PlaySync()"` plays the WAV. The mod doubles each `'` in the path.
 4. On mac, `afplay <WAV path>` plays the WAV.
-5. On Linux, `paplay <WAV path>` plays the WAV. If `paplay` fails or is missing, `aplay -q <WAV path>` plays the WAV.
+5. On Linux, `paplay <WAV path>` plays the WAV. If `paplay` fails or is missing, `aplay -q <WAV path>` plays the WAV. If `paplay` runs longer than 5 seconds, the mod stops it and runs `aplay -q`. The sound can then play twice.
 
 Every command has a timeout (3 seconds for `uname` and `wslpath`, 5 seconds for playback). The mod plays only the WAV files in its own `sounds/` folder. It does not read or send any other data.
 
-On an OS that is not mac, Linux, or WSL, the mod runs no playback command and no sound plays. When the detection or the playback fails, the mod plays no sound and shows no error. If `wslpath` fails, the mod still runs `powershell.exe` with an empty path, and no sound plays.
+On an OS that is not mac, Linux, or WSL, the mod runs no playback command and no sound plays. When the detection or the playback fails, the mod plays no sound and shows no error. If `wslpath` is missing or times out, the mod does not run `powershell.exe`. If `wslpath` exits with an error, the mod runs `powershell.exe` with the output of `wslpath` as the path, and no sound plays.
 
 ## Limitations
 
