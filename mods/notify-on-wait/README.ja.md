@@ -33,11 +33,11 @@ mod は、次のコマンドを実行します。他のコマンドは実行し�
 2. WSL では、`wslpath -w <WAV のパス>` で、WAV のパスを Windows 形式に変換します。
 3. WSL では、`powershell.exe -NoProfile -Command "(New-Object System.Media.SoundPlayer '<Windows 形式のパス>').PlaySync()"` で、WAV を再生します。パス内の `'` は、2個に置き換えます。
 4. mac では、`afplay <WAV のパス>` で、WAV を再生します。
-5. Linux では、`paplay <WAV のパス>` で、WAV を再生します。失敗したときは、`aplay -q <WAV のパス>` で再生します。
+5. Linux では、`paplay <WAV のパス>` で、WAV を再生します。`paplay` が失敗したとき、または存在しないときは、`aplay -q <WAV のパス>` で再生します。
 
 どのコマンドにも、タイムアウトがあります(`uname` と `wslpath` は3秒、再生は5秒)。mod が再生するのは、mod 自身の `sounds/` フォルダの WAV だけです。他のデータの読み取りと送信は、しません。
 
-mac、Linux、WSL 以外の OS では、再生コマンドを実行せず、音は鳴りません。判定または再生が失敗したときも、音は鳴らず、エラーも表示しません。
+mac、Linux、WSL 以外の OS では、再生コマンドを実行せず、音は鳴りません。判定または再生が失敗したときも、音は鳴らず、エラーも表示しません。`wslpath` が失敗したときも、空のパスで `powershell.exe` を実行し、音は鳴りません。
 
 ## 制限事項
 
