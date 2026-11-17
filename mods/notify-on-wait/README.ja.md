@@ -27,6 +27,15 @@ Claude Code があなたの操作を待っているとき、知らせます。�
 | Linux | `paplay`。失敗したときは `aplay` |
 | WSL | `powershell.exe` 経由の `System.Media.SoundPlayer` |
 
+mod は、次のコマンドを実行します。他のコマンドは実行しません。
+
+1. `uname -sr` で、OS を判定します。
+2. WSL では、`wslpath -w <WAV のパス>` で、WAV のパスを Windows 形式に変換します。
+3. WSL では、`powershell.exe -NoProfile -Command "(New-Object System.Media.SoundPlayer '<Windows 形式のパス>').PlaySync()"` で、WAV を再生します。
+4. mac と Linux では、表のコマンドで WAV を再生します。
+
+どのコマンドにも、タイムアウトがあります(`uname` と `wslpath` は3秒、再生は5秒)。mod が再生するのは、mod 自身の `sounds/` フォルダの WAV だけです。他のデータの読み取りと送信は、しません。
+
 ## 制限事項
 
 - WSL(tmux と VS Code のターミナル)でだけ動作を確認しています。mac と Linux では未確認です。
