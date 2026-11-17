@@ -31,10 +31,13 @@ The mod runs these commands. It runs no other command.
 
 1. `uname -sr` detects the OS.
 2. On WSL, `wslpath -w <WAV path>` converts the WAV path to a Windows path.
-3. On WSL, `powershell.exe -NoProfile -Command "(New-Object System.Media.SoundPlayer '<Windows path>').PlaySync()"` plays the WAV.
-4. On mac and Linux, the command in the table plays the WAV.
+3. On WSL, `powershell.exe -NoProfile -Command "(New-Object System.Media.SoundPlayer '<Windows path>').PlaySync()"` plays the WAV. The mod doubles each `'` in the path.
+4. On mac, `afplay <WAV path>` plays the WAV.
+5. On Linux, `paplay <WAV path>` plays the WAV. If it fails, `aplay -q <WAV path>` plays the WAV.
 
 Every command has a timeout (3 seconds for `uname` and `wslpath`, 5 seconds for playback). The mod plays only the WAV files in its own `sounds/` folder. It does not read or send any other data.
+
+On an OS that is not mac, Linux, or WSL, the mod runs no playback command and no sound plays. When the detection or the playback fails, the mod plays no sound and shows no error.
 
 ## Limitations
 
