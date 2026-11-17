@@ -1,1 +1,1 @@
-{ "name": "notify-on-wait", "version": "0.1.2", "license": "MIT", "author": { "name": "tomoyankun" }, "description": "Plays a sound and blinks a band above the prompt until answered when a permission prompt or a model question appears.", "types": "./types/index.d.ts" }
+{ "name": "notify-on-wait", "version": "0.1.3", "license": "MIT", "author": { "name": "tomoyankun" }, "description": "Plays a sound and blinks a band above the prompt until answered when a permission prompt or a model question appears.", "types": "./types/index.d.ts" }
