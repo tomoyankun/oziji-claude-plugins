@@ -115,12 +115,18 @@ async function turn($: any, to: number, pages: number, step: 1 | -1) {
   const same = step === 1 ? 'next' : 'prev'
   const other = step === 1 ? 'prev' : 'next'
   const hasSame = step === 1 ? to < pages - 1 : to > 0
+  // The updater clamps the page. Two fast presses then move two pages, not one.
   try {
-    await update($, page, () => to)
+    await update($, page, (p: number) => Math.min(Math.max(p + step, 0), pages - 1))
+  } catch (err) {
+    $.ui.toast(`Page change failed: ${String(err)}`)
+    return
+  }
+  try {
     const moved = await $.ui.focus({ requestId: PANE, key: hasSame ? same : other })
     if ('deny' in moved) $.ui.toast(`Focus not restored: ${moved.deny}`)
   } catch (err) {
-    $.ui.toast(`Page change failed: ${String(err)}`)
+    $.ui.toast(`Focus not restored: ${String(err)}`)
   }
 }
 
