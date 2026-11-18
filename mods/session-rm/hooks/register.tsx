@@ -107,6 +107,18 @@ async function remove($: any, id: string) {
   $.ui.toast(`Deleted ${id}`)
 }
 
+// Shows another page, then puts the focus ring on a button that the new page
+// draws. Without it, the pressed button can leave the ring and the keys return
+// to the main session.
+async function turn($: any, to: number, preferred: string, fallback?: string) {
+  await update($, page, () => to)
+  let moved = await $.ui.focus({ requestId: PANE, key: preferred })
+  if ('deny' in moved && fallback) {
+    moved = await $.ui.focus({ requestId: PANE, key: fallback })
+  }
+  if ('deny' in moved) $.ui.toast(`Focus not restored: ${moved.deny}`)
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
@@ -170,7 +182,7 @@ export const register: Register = on => {
                 key="prev"
                 plain
                 label={`< Previous page (${current}/${pages})`}
-                onPress={() => update($, page, () => current - 1)}
+                onPress={() => turn($, current - 1, current - 1 > 0 ? 'prev' : 'next', list[(current - 1) * PAGE_SIZE]?.id)}
               />
             )}
             {current < pages - 1 && (
@@ -178,7 +190,7 @@ export const register: Register = on => {
                 key="next"
                 plain
                 label={`> Next page (${current + 2}/${pages})`}
-                onPress={() => update($, page, () => current + 1)}
+                onPress={() => turn($, current + 1, current + 1 < pages - 1 ? 'next' : 'prev', list[(current + 1) * PAGE_SIZE]?.id)}
               />
             )}
           </Box>
