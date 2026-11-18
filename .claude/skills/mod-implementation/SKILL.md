@@ -24,13 +24,13 @@ mod の API の書き方は `plugin-authoring` スキルに従う。
    - `claude plugin test mods/<mod名>`(`*.test.ts` がある mod だけ)
    - 型検査(次節)
 5. 実機で確認する。
-   - ユーザーに `/reload-plugins` を依頼する。ホットリロードの条件は、CLAUDE.md の「コマンド」に従う。
+   - ホットリロードが効く環境では、ターンの終了を待ってから確認を依頼する。効かない環境では、`/reload-plugins` かセッションの再起動を依頼する。条件は、CLAUDE.md の「コマンド」に従う。
    - 確認の観点を、番号を付けて渡す。例: 「1. 鳴ったか 2. 何回鳴ったか」
    - ユーザーの返答は、観点ごとに「できた」「できない」で受け取る。
    - 実機で確認していないことは、「未確認」と書く。原因は、確認するまで「推測」と書く。
 6. 問題が残るときは、`superpowers:systematic-debugging` を使う。修正は1回に1件だけにする。
-7. `code-review` スキルでレビューする。CLAUDE.md の規則に従う。最大3回繰り返す。
-8. `plugin.json` の `version` を上げる。同じ PR に入れる。
+7. `plugin.json` の `version` を上げる。同じ PR に入れる。
+8. `code-review` スキルでレビューする。CLAUDE.md の規則に従う。最大3回繰り返す。
 9. `gh pr create` で PR を作る。ユーザーがマージする。
 10. ユーザーが「マージした」と伝えたら、`main` を更新して、タグを打つ。CLAUDE.md の「リリース手順」に従う。
 11. 利用者への更新案内が必要なら、README の「更新」の3つの手順を示す。
@@ -40,7 +40,7 @@ mod の API の書き方は `plugin-authoring` スキルに従う。
 型の生成方法と、生成前のエラーの意味は、CLAUDE.md の「コマンド」に従う。
 
 - 型を生成できないときは、スクラッチパッドに一時の `tsconfig.json` を置いて検査する。リポジトリに `typescript` を追加しない。
-- `tsc` を `--noEmit` なしで実行すると、`hooks/register.js` が出力される。このファイルをコミットしない。コミット前に `git status` で確認する。
+- `tsc` に `--noEmit` を付ける。付けないと、`hooks/register.js` が出力される。このファイルをコミットしない。コミット前に `git status` で確認する。
 
 ## 検証の報告
 
@@ -63,14 +63,14 @@ mod の API の書き方は `plugin-authoring` スキルに従う。
 
 - `$.audio.play` は mac でしか鳴らない。`$.process.run` で OS ごとのコマンドを呼ぶ(WSL は `powershell.exe`、mac は `afplay`、Linux は `paplay` か `aplay`)。
 - `$.ui.notify` は、tmux・VS Code・WSL の環境で `no-channel` になる。通知手段として当てにしない。
-- チームメイトの質問は、親では `AskUserQuestion` の許可確認として届く。`classic.PermissionRequest` と `classic.Elicitation` は発火しない。`classic.Notification` も検知に使う。
+- チームメイトの質問は、親では `AskUserQuestion` の許可確認として届く。このとき `classic.PermissionRequest` と `classic.Elicitation` は発火しない。親自身の待ちでは、この2つも発火する。検知には `classic.Notification` も使う。
 
 ### 点滅と表示
 
 - プロンプト上の帯とステータスラインは、質問のダイアログが出ている間は見えない。
 - トーストを短い間隔で出し続けると、積み重なる(`+5 more`)。
 - ペインは、端末の幅が110桁以上のときだけ開く。tmux でチームメイトを分割すると、親が狭くなり、ペインが開かない。
-- 画面に出す文言は英語にする。日本語の説明は `README.ja.md` に残す。
+- 画面に出す文言とコマンドの実行結果は、英語にする(2026-11-12 のユーザーの指示)。日本語の説明は `README.ja.md` に残す。
 
 ### ペインと `Select`
 

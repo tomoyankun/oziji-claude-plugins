@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `main` ブランチは保護されていて、直接 push できない。ブランチを切り、`gh pr create` で PR を作成してマージする。承認者は `tomoyankun` だけである(`.github/CODEOWNERS`)。
 - 実装が終わったら、PR を作る前にレビューする。`code-review` スキルで差分を確認し、指摘を直す。レビューと修正は、最大3回繰り返す。指摘がなくなったら、3回に達する前でも終了する。3回目の後に指摘が残るときは、残った指摘を PR の説明に書く。
 - mod を実装・修正・リリースするときは、`mod-implementation` スキルを使う(手順と既知の落とし穴)。
-- mod のバージョンを上げるときは、`plugin.json` の `version` と Git タグ(`<mod名>-v<version>`)を同じ値にする。手順は「リリース手順」に従う。`v<version>` の既存タグは変えない。
+- mod のバージョンを上げるときは、`plugin.json` の `version` と Git タグ(`<mod名>-v<version>`)を同じ値にする。タグは、マージ後に打つ。リリースの記録である。手順は「リリース手順」に従う。`v<version>` の既存タグは変えない。
 
 ## 構成
 
@@ -34,7 +34,7 @@ plugin-authoring スキルは新しい mod を、このリポジトリの外の 
 claude plugin validate mods/<mod名>   # マニフェストとフックの検証
 claude plugin test mods/<mod名>       # *.test.ts の実行
 claude --plugin-dir mods/<mod名>      # mod を読み込んだ状態でセッション開始
-npx -y -p typescript tsc -p mods/<mod名>   # 型検査(リポジトリに typescript を追加しない)
+npx -y -p typescript tsc --noEmit -p mods/<mod名>   # 型検査(リポジトリに typescript を追加しない)
 ```
 
 `.claude-plugin/types/` は、`claude plugin validate` と `claude -p --plugin-dir` では生成されない。クローン直後は、対話セッションで `claude --plugin-dir mods/<mod名>` を起動し、`/exit` で終了する。生成前に `tsc` を実行すると、`types/tsconfig.json` を読めないエラーと、`claude-code` の型が見つからないエラーが大量に出る。コードの不具合ではない。
