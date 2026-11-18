@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - mod やそのフックモジュールを作成・デバッグするときは `plugin-authoring` スキルを使う。
 - `main` ブランチは保護されていて、直接 push できない。ブランチを切り、`gh pr create` で PR を作成してマージする。承認者は `tomoyankun` だけである(`.github/CODEOWNERS`)。
 - 実装が終わったら、PR を作る前にレビューする。`code-review` スキルで差分を確認し、指摘を直す。レビューと修正は、最大3回繰り返す。指摘がなくなったら、3回に達する前でも終了する。3回目の後に指摘が残るときは、残った指摘を PR の説明に書く。
-- mod を実装・修正・リリースするときは、`mod-implementation` スキルを使う(手順と既知の落とし穴)。
+- mod の実装・検証・レビュー・PR・タグの進め方は、`mod-implementation` スキルに従う(手順と既知の落とし穴)。API の書き方は、`plugin-authoring` スキルに従う。
 - mod のバージョンを上げるときは、`plugin.json` の `version` と Git タグ(`<mod名>-v<version>`)を同じ値にする。タグは、マージ後に打つ。リリースの記録である。手順は「リリース手順」に従う。`v<version>` の既存タグは変えない。
 
 ## 構成
