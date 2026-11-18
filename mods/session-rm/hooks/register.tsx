@@ -107,16 +107,21 @@ async function remove($: any, id: string) {
   $.ui.toast(`Deleted ${id}`)
 }
 
-// Shows another page, then puts the focus ring on a button that the new page
-// draws. Without it, the pressed button can leave the ring and the keys return
-// to the main session.
-async function turn($: any, to: number, preferred: string, fallback?: string) {
-  await update($, page, () => to)
-  let moved = await $.ui.focus({ requestId: PANE, key: preferred })
-  if ('deny' in moved && fallback) {
-    moved = await $.ui.focus({ requestId: PANE, key: fallback })
+// Shows another page, then puts the focus ring on the button that moves in the
+// same direction. The new page may not draw that button (first or last page).
+// Then the ring goes to the opposite button. Without it, the pressed button
+// can leave the ring and the keys return to the main session.
+async function turn($: any, to: number, pages: number, step: 1 | -1) {
+  const same = step === 1 ? 'next' : 'prev'
+  const other = step === 1 ? 'prev' : 'next'
+  const hasSame = step === 1 ? to < pages - 1 : to > 0
+  try {
+    await update($, page, () => to)
+    const moved = await $.ui.focus({ requestId: PANE, key: hasSame ? same : other })
+    if ('deny' in moved) $.ui.toast(`Focus not restored: ${moved.deny}`)
+  } catch (err) {
+    $.ui.toast(`Page change failed: ${String(err)}`)
   }
-  if ('deny' in moved) $.ui.toast(`Focus not restored: ${moved.deny}`)
 }
 
 export const register: Register = on => {
@@ -182,7 +187,7 @@ export const register: Register = on => {
                 key="prev"
                 plain
                 label={`< Previous page (${current}/${pages})`}
-                onPress={() => turn($, current - 1, current - 1 > 0 ? 'prev' : 'next', list[(current - 1) * PAGE_SIZE]?.id)}
+                onPress={() => turn($, current - 1, pages, -1)}
               />
             )}
             {current < pages - 1 && (
@@ -190,7 +195,7 @@ export const register: Register = on => {
                 key="next"
                 plain
                 label={`> Next page (${current + 2}/${pages})`}
-                onPress={() => turn($, current + 1, current + 1 < pages - 1 ? 'next' : 'prev', list[(current + 1) * PAGE_SIZE]?.id)}
+                onPress={() => turn($, current + 1, pages, 1)}
               />
             )}
           </Box>
