@@ -107,21 +107,23 @@ async function remove($: any, id: string) {
   $.ui.toast(`Deleted ${id}`)
 }
 
-// Shows another page, then puts the focus ring on the button that moves in the
-// same direction. The new page may not draw that button (first or last page).
-// Then the ring goes to the opposite button. Without it, the pressed button
-// can leave the ring and the keys return to the main session.
-async function turn($: any, to: number, pages: number, step: 1 | -1) {
-  const same = step === 1 ? 'next' : 'prev'
-  const other = step === 1 ? 'prev' : 'next'
-  const hasSame = step === 1 ? to < pages - 1 : to > 0
-  // The updater clamps the page. Two fast presses then move two pages, not one.
+// Shows the page one step away, then puts the focus ring on the button that
+// moves in the same direction. The reached page may not draw that button
+// (first or last page). Then the ring goes to the opposite button. Without it,
+// the pressed button can leave the ring and the keys return to the main session.
+async function turn($: any, pages: number, step: 1 | -1) {
+  let reached: number
   try {
+    // The updater clamps the page. Two fast presses then move two pages, not one.
     await update($, page, (p: number) => Math.min(Math.max(p + step, 0), pages - 1))
+    reached = await read($, page)
   } catch (err) {
     $.ui.toast(`Page change failed: ${String(err)}`)
     return
   }
+  const same = step === 1 ? 'next' : 'prev'
+  const other = step === 1 ? 'prev' : 'next'
+  const hasSame = step === 1 ? reached < pages - 1 : reached > 0
   try {
     const moved = await $.ui.focus({ requestId: PANE, key: hasSame ? same : other })
     if ('deny' in moved) $.ui.toast(`Focus not restored: ${moved.deny}`)
@@ -193,7 +195,7 @@ export const register: Register = on => {
                 key="prev"
                 plain
                 label={`< Previous page (${current}/${pages})`}
-                onPress={() => turn($, current - 1, pages, -1)}
+                onPress={() => turn($, pages, -1)}
               />
             )}
             {current < pages - 1 && (
@@ -201,7 +203,7 @@ export const register: Register = on => {
                 key="next"
                 plain
                 label={`> Next page (${current + 2}/${pages})`}
-                onPress={() => turn($, current + 1, pages, 1)}
+                onPress={() => turn($, pages, 1)}
               />
             )}
           </Box>
